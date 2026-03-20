@@ -1,5 +1,8 @@
 export { negotiatePrice } from './negotiation';
 export { routeTask } from './task-router';
+export { executeLifecycle } from './lifecycle';
+export { OrchestratorEngine } from './engine';
+export { LifecycleStep } from './types';
 export type {
   NegotiationStatus,
   NegotiationMessage,
@@ -10,7 +13,6 @@ export type {
   ExcludedAgent,
   RoutingConfig,
   RoutingDecision,
-  LifecycleStep,
   LifecycleRequest,
   LifecycleResult,
   LifecycleState,
