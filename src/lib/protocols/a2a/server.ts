@@ -11,6 +11,7 @@ import { EVENT_TYPES } from '@/lib/events/constants';
 import { Protocol } from '@/lib/events/types';
 import { DEMO_AGENT_ROLES } from '@/lib/agents/config';
 import type { DemoAgentRole } from '@/lib/agents/types';
+import { executeTool } from '@/lib/protocols/mcp/server';
 
 const eventBus = createEventBus();
 
@@ -100,6 +101,41 @@ async function handleTaskSend(
       offeredPayment: params.offeredPayment,
     },
   });
+
+  // Execute MCP tool for the agent
+  if (isValidAgentId(agentId)) {
+    task.status = 'working';
+    const result = await executeTool(params.capability, { code: params.description, text: params.description, topic: params.description }, agentId);
+
+    if (result.isError) {
+      task.status = 'failed';
+      task.messages.push({
+        role: 'agent',
+        parts: result.content.map((c) => ({ type: 'text' as const, text: c.text })),
+        timestamp: Date.now(),
+      });
+    } else {
+      task.status = 'completed';
+      task.messages.push({
+        role: 'agent',
+        parts: result.content.map((c) => ({ type: 'text' as const, text: c.text })),
+        timestamp: Date.now(),
+      });
+      task.artifacts = [{ type: 'text', data: result.content.map((c) => c.text).join('\n') }];
+    }
+
+    // Update task in KV
+    await kvSet(`tasks:${taskId}`, { ...task, agentId, requesterId: params.requesterId, capability: params.capability });
+
+    // Emit delivery event
+    await eventBus.emit({
+      type: EVENT_TYPES.TASK_DELIVERED,
+      protocol: Protocol.A2a,
+      agentId,
+      targetAgentId: params.requesterId,
+      data: { taskId, agentId, deliverableType: 'text', status: task.status },
+    });
+  }
 
   return { jsonrpc: '2.0', id: requestId, result: task };
 }

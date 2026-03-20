@@ -18,6 +18,16 @@ vi.mock('@/lib/wallets', () => ({
   getAddress: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef12345678'),
 }));
 
+vi.mock('@/lib/ai/client', () => ({
+  getClaudeClient: vi.fn(() => ({
+    messages: {
+      create: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Mock review result' }],
+      }),
+    },
+  })),
+}));
+
 import { kvGet, kvSet } from '@/lib/storage/kv';
 
 const mockedKvGet = vi.mocked(kvGet);
@@ -61,13 +71,15 @@ describe('handleA2ARequest', () => {
 
     const task = response.result as { id: string; status: string; messages: unknown[] };
     expect(task.id).toBeTruthy();
-    expect(task.status).toBe('submitted');
-    expect(task.messages).toHaveLength(1);
+    // After MCP execution wiring, tasks/send executes the tool and completes
+    expect(task.status).toBe('completed');
+    // 2 messages: user request + agent response
+    expect(task.messages).toHaveLength(2);
 
-    // Verify task was stored in KV
+    // Verify task was stored in KV (final state after execution)
     expect(mockedKvSet).toHaveBeenCalledWith(
       expect.stringContaining('tasks:'),
-      expect.objectContaining({ status: 'submitted', agentId: 'reviewer' })
+      expect.objectContaining({ agentId: 'reviewer' })
     );
   });
 
