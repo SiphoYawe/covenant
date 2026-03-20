@@ -1,0 +1,108 @@
+import type { DemoEvent } from '@/lib/events';
+import { Protocol } from '@/lib/events';
+
+// --- Protocol badge configuration ---
+
+export type ProtocolConfig = {
+  label: string;
+  bg: string;
+  text: string;
+};
+
+export const PROTOCOL_COLORS: Record<string, ProtocolConfig> = {
+  [Protocol.A2a]: { label: 'A2A', bg: 'bg-blue-600/20', text: 'text-blue-400' },
+  [Protocol.X402]: { label: 'x402', bg: 'bg-green-600/20', text: 'text-green-400' },
+  [Protocol.Mcp]: { label: 'MCP', bg: 'bg-purple-600/20', text: 'text-purple-400' },
+  [Protocol.Erc8004]: { label: 'ERC-8004', bg: 'bg-orange-600/20', text: 'text-orange-400' },
+  [Protocol.Civic]: { label: 'Civic', bg: 'bg-red-600/20', text: 'text-red-400' },
+  [Protocol.CovenantAi]: { label: 'Covenant AI', bg: 'bg-amber-600/20', text: 'text-amber-400' },
+};
+
+export function getProtocolConfig(protocol: string): ProtocolConfig {
+  return (
+    PROTOCOL_COLORS[protocol] ?? {
+      label: protocol,
+      bg: 'bg-zinc-700',
+      text: 'text-zinc-300',
+    }
+  );
+}
+
+// --- Event description formatting ---
+
+export function formatEventDescription(event: DemoEvent): string {
+  const d = event.data;
+  const agent = (d.name as string) || event.agentId?.slice(0, 8) || 'Unknown';
+
+  switch (event.type) {
+    case 'agent:registered':
+      return `Agent ${agent} registered on ERC-8004`;
+    case 'agent:metadata-stored':
+      return `Agent ${agent} metadata stored on IPFS`;
+    case 'task:requested':
+      return `Agent ${agent} requested a task`;
+    case 'task:negotiated': {
+      const target = (d.targetName as string) || event.targetAgentId?.slice(0, 8) || 'unknown';
+      const price = d.price ?? '?';
+      return `Agent ${agent} negotiated with ${target} at ${price} USDC`;
+    }
+    case 'task:delivered':
+      return `Agent ${agent} delivered task results`;
+    case 'task:accepted':
+      return `Agent ${agent} accepted delivery`;
+    case 'task:rejected':
+      return `Agent ${agent} rejected delivery`;
+    case 'payment:initiated':
+      return `Payment initiated: ${d.amount ?? '?'} USDC`;
+    case 'payment:settled': {
+      const target = (d.payeeName as string) || event.targetAgentId?.slice(0, 8) || 'unknown';
+      return `Agent ${agent} paid ${target} ${d.amount ?? '?'} USDC via x402`;
+    }
+    case 'payment:failed':
+      return `Payment failed: ${d.reason ?? 'unknown error'}`;
+    case 'civic:identity-checked':
+      return `Civic identity check on Agent ${agent}`;
+    case 'civic:behavioral-checked':
+      return `Civic behavioral check on Agent ${agent}`;
+    case 'civic:flagged':
+      return `Civic flagged Agent ${agent}: ${d.attackType ?? 'suspicious behavior'} (${d.severity ?? 'warning'})`;
+    case 'civic:cleared':
+      return `Agent ${agent} cleared by Civic`;
+    case 'reputation:computing':
+      return `Computing reputation for Agent ${agent}`;
+    case 'reputation:updated':
+      return `Agent ${agent} reputation updated to ${d.reputationScore ?? '?'}/10`;
+    case 'reputation:explanation-stored':
+      return `Reputation explanation stored for Agent ${agent}`;
+    case 'feedback:submitted':
+      return `Feedback submitted for Agent ${agent}`;
+    case 'feedback:recorded-onchain':
+      return `Feedback recorded on-chain for Agent ${agent}`;
+    case 'demo:act-changed':
+      return `Demo Act ${d.act ?? '?'}: ${d.status ?? 'started'}`;
+    case 'demo:reset':
+      return 'Demo reset';
+    case 'demo:complete':
+      return 'Demo complete';
+    default:
+      return `${event.type} event for Agent ${agent}`;
+  }
+}
+
+// --- Timestamp formatting ---
+
+export function formatTimestamp(timestamp: number): string {
+  const diff = Math.floor((Date.now() - timestamp) / 1000);
+
+  if (diff < 5) return 'just now';
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+// --- Civic flag detection ---
+
+export function isCivicFlagEvent(event: DemoEvent): boolean {
+  return event.type === 'civic:flagged';
+}

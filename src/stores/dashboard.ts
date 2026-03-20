@@ -42,6 +42,7 @@ export type DashboardState = {
   events: DemoEvent[];
   metrics: EconomicMetrics;
   demoState: DemoState;
+  selectedAgentId: string | null;
 };
 
 export type DashboardActions = {
@@ -49,6 +50,7 @@ export type DashboardActions = {
   updateAgent: (agentId: string, update: Partial<Omit<AgentState, 'agentId'>>) => void;
   addEdge: (edge: TrustEdge) => void;
   updateMetrics: (partial: Partial<EconomicMetrics>) => void;
+  setSelectedAgent: (agentId: string | null) => void;
   resetDemo: () => void;
 };
 
@@ -72,6 +74,7 @@ const initialState: DashboardState = {
     currentAct: 0,
     status: 'idle',
   },
+  selectedAgentId: null,
 };
 
 // --- Store ---
@@ -188,6 +191,10 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
     }));
   },
 
+  setSelectedAgent: (agentId: string | null) => {
+    set({ selectedAgentId: agentId });
+  },
+
   resetDemo: () => {
     set({ ...initialState });
   },
@@ -209,3 +216,6 @@ export const useDemoState = () =>
 
 export const useEdges = () =>
   useDashboardStore((s) => s.edges);
+
+export const useSelectedAgentId = () =>
+  useDashboardStore((s) => s.selectedAgentId);
