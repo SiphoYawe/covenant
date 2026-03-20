@@ -65,3 +65,40 @@ export type FeedbackEvent = {
   blockNumber: number;
   txHash: string;
 };
+
+// --- Write-back types (Story 5.8) ---
+
+/** Signal summary for on-chain transparency */
+export type SignalSummary = {
+  stakeWeight: number;
+  trustPropagation: number;
+  sybilPenalty: number;
+  civicFlag: number;
+  paymentVolume: number;
+};
+
+/** Data to write back on-chain via appendResponse */
+export type AppendResponseData = {
+  agentId: string;
+  score: number;
+  explanationCid: string;
+  timestamp: number;
+  signalSummary: SignalSummary;
+};
+
+/** Cached reputation in KV for dashboard reads */
+export type CachedReputation = {
+  score: number;
+  explanationCid: string;
+  txHash: string;
+  updatedAt: number;
+};
+
+/** API response shape for reputation scores */
+export type ReputationScoreResponse = {
+  agentId: string;
+  score: number;
+  explanationCid: string;
+  txHash: string;
+  updatedAt: number;
+};
