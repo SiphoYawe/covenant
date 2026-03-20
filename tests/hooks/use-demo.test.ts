@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { DemoAct } from '@/lib/orchestrator/types';
 
 // --- Mock Zustand store ---
 
@@ -45,7 +44,7 @@ describe('useDemo hook', () => {
     const { useDemo } = await import('@/hooks/use-demo');
     const { result } = renderHook(() => useDemo());
 
-    expect(result.current.currentAct).toBe(DemoAct.VillainAttacks);
+    expect(result.current.currentAct).toBe('VillainAttacks');
   });
 
   it('isRunning returns true only when status is running', async () => {

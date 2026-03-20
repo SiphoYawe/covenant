@@ -3,8 +3,17 @@
 import { useState, useCallback } from 'react';
 import { useDashboardStore } from '@/stores/dashboard';
 import { useShallow } from 'zustand/react/shallow';
-import { DemoAct, DemoStatus } from '@/lib/orchestrator';
-import type { DemoResetResult } from '@/lib/orchestrator';
+
+/** Client-side act names (mirrors DemoAct enum without importing server code) */
+const ACT_NAMES = ['Idle', 'Registration', 'EconomyWorks', 'VillainAttacks', 'Consequences', 'Payoff'] as const;
+type DemoActName = (typeof ACT_NAMES)[number];
+
+type DemoResetResult = {
+  success: boolean;
+  keysCleared: number;
+  resetAt: number;
+  error?: string;
+};
 
 export function useDemo() {
   const demoState = useDashboardStore(useShallow((s) => s.demoState));
@@ -44,17 +53,7 @@ export function useDemo() {
     return res.json();
   }, []);
 
-  // Map numeric dashboard state to DemoAct enum for convenience
-  const actMap: Record<number, DemoAct> = {
-    0: DemoAct.Idle,
-    1: DemoAct.Registration,
-    2: DemoAct.EconomyWorks,
-    3: DemoAct.VillainAttacks,
-    4: DemoAct.Consequences,
-    5: DemoAct.Payoff,
-  };
-
-  const currentAct = actMap[demoState.currentAct] ?? DemoAct.Idle;
+  const currentAct: DemoActName = ACT_NAMES[demoState.currentAct] ?? 'Idle';
   const isRunning = demoState.status === 'running';
   const isIdle = demoState.status === 'idle';
 
