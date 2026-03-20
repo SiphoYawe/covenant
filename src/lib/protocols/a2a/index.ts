@@ -1,5 +1,6 @@
 export { generateAgentCard, getAgentCard } from './agent-card';
-export { discoverAgents } from './client';
+export { discoverAgents, sendTask, getTask, cancelTask } from './client';
+export { handleA2ARequest, isValidAgentId, updateTaskStatus } from './server';
 export type {
   AgentCard,
   Skill,

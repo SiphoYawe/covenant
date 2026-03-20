@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { discoverAgents } from '@/lib/protocols/a2a/client';
+import { discoverAgents, sendTask, getTask } from '@/lib/protocols/a2a/client';
 
 vi.mock('@/lib/storage/kv', () => ({
   kvGet: vi.fn(),
@@ -81,5 +81,93 @@ describe('discoverAgents', () => {
     await discoverAgents();
     // 4 agents = 4 KV lookups (one per agent for reputation)
     expect(mockedKvGet).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe('sendTask', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: vi.fn().mockResolvedValue({
+          jsonrpc: '2.0',
+          id: 'req-1',
+          result: { id: 'task-1', status: 'submitted', messages: [], artifacts: [] },
+        }),
+      })
+    );
+  });
+
+  it('makes correct HTTP POST with JSON-RPC format', async () => {
+    const task = await sendTask('http://localhost:3000/api/agents/reviewer/a2a', {
+      description: 'Review this code',
+      capability: 'review_code',
+      offeredPayment: 5,
+      requesterId: 'researcher',
+    });
+
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/agents/reviewer/a2a', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: expect.stringContaining('"method":"tasks/send"'),
+    });
+    expect(task.status).toBe('submitted');
+  });
+
+  it('parses successful response', async () => {
+    const task = await sendTask('http://localhost:3000/api/agents/reviewer/a2a', {
+      description: 'Review code',
+      capability: 'review_code',
+      offeredPayment: 5,
+      requesterId: 'researcher',
+    });
+
+    expect(task.id).toBe('task-1');
+    expect(task.status).toBe('submitted');
+  });
+
+  it('handles JSON-RPC error response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: vi.fn().mockResolvedValue({
+          jsonrpc: '2.0',
+          id: 'req-1',
+          error: { code: -32602, message: 'Invalid params' },
+        }),
+      })
+    );
+
+    await expect(
+      sendTask('http://localhost:3000/api/agents/reviewer/a2a', {
+        description: '',
+        capability: '',
+        offeredPayment: 0,
+        requesterId: '',
+      })
+    ).rejects.toThrow('A2A error');
+  });
+});
+
+describe('getTask', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: vi.fn().mockResolvedValue({
+          jsonrpc: '2.0',
+          id: 'req-1',
+          result: { id: 'task-1', status: 'completed', messages: [], artifacts: [] },
+        }),
+      })
+    );
+  });
+
+  it('retrieves task by ID', async () => {
+    const task = await getTask('http://localhost:3000/api/agents/reviewer/a2a', 'task-1');
+    expect(task.id).toBe('task-1');
+    expect(task.status).toBe('completed');
   });
 });
