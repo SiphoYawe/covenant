@@ -8,6 +8,7 @@ node_modules/
 out/
 build/
 dist/
+next-env.d.ts
 
 # Environment
 .env
@@ -56,3 +57,4 @@ docs/
 
 # Testing
 coverage/
+.env*.local
