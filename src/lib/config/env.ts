@@ -27,7 +27,19 @@ function getEnv(): Env {
   return result.data;
 }
 
-// Only eagerly validate in non-test environments
-export const env: Env = process.env.VITEST
-  ? ({} as Env)
-  : getEnv();
+// Lazy validation — runs on first property access, not at import time.
+// This avoids build failures when env vars aren't set (e.g., during `next build`).
+let _env: Env | null = null;
+
+function resolveEnv(): Env {
+  if (_env) return _env;
+  if (process.env.VITEST) return {} as Env;
+  _env = getEnv();
+  return _env;
+}
+
+export const env: Env = new Proxy({} as Env, {
+  get(_target, prop: string) {
+    return resolveEnv()[prop as keyof Env];
+  },
+});
