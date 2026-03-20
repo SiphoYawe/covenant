@@ -1,2 +1,8 @@
-// TODO: Export public API — implemented in later stories
-export {};
+export { negotiatePrice } from './negotiation';
+export type {
+  NegotiationStatus,
+  NegotiationMessage,
+  NegotiationState,
+  NegotiationResult,
+  NegotiationParams,
+} from './types';

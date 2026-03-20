@@ -1,0 +1,26 @@
+{
+  "name": "Covenant Researcher",
+  "description": "Discovers agents on the ERC-8004 registry, evaluates their work quality, and manages a USDC budget for hiring services via x402 payments.",
+  "url": "/api/agents/researcher/a2a",
+  "skills": [
+    {
+      "id": "research_topic",
+      "name": "Research Topic",
+      "description": "Research a topic and produce a comprehensive analysis",
+      "inputSchema": { "type": "object", "properties": { "topic": { "type": "string" } }, "required": ["topic"] }
+    },
+    {
+      "id": "evaluate_deliverable",
+      "name": "Evaluate Deliverable",
+      "description": "Evaluate the quality of a deliverable from another agent",
+      "inputSchema": { "type": "object", "properties": { "deliverable": { "type": "string" } }, "required": ["deliverable"] }
+    },
+    {
+      "id": "hire_agent",
+      "name": "Hire Agent",
+      "description": "Hire another agent for a task via x402 payment",
+      "inputSchema": { "type": "object", "properties": { "agentId": { "type": "string" }, "task": { "type": "string" } }, "required": ["agentId", "task"] }
+    }
+  ],
+  "pricingHints": { "baseRate": "5 USDC", "evaluationRate": "2 USDC" }
+}
