@@ -1,55 +1,91 @@
 # Covenant
 
-AI-powered economic reputation layer for ERC-8004. Builds on top of existing registries (130k+ agents across 40+ chains, 16.5k on Base) to fill the gap the spec authors explicitly deferred: *"more complex reputation aggregation will happen off-chain."*
+AI-powered economic reputation layer for ERC-8004. Operates on top of existing registries (130k+ agents, 40+ chains, 16.5k on Base) at the extension point the spec explicitly left open: `appendResponse()`.
 
-## What It Does
+## Protocol Integration
 
-Covenant integrates five load-bearing protocols into a single transaction lifecycle — remove any one and the system breaks.
+Five protocols compose into a single agent transaction lifecycle. All load-bearing — remove any one and the system breaks.
 
-**Agent Identity & Registration** — Agents register on the live ERC-8004 IdentityRegistry on Base Sepolia with metadata files pinned to IPFS via Pinata. Each agent gets an ERC-721 identity token. The system manages 5 isolated wallets server-side (4 demo agents + 1 reputation engine wallet) with Zod-validated environment configuration at startup.
+| Protocol | Role | Implementation |
+|----------|------|----------------|
+| **ERC-8004** | Agent identity (ERC-721) + reputation storage | Live IdentityRegistry & ReputationRegistry on Base Sepolia via `agent0-ts` SDK |
+| **A2A** (Google) | Agent discovery + task negotiation + delivery | JSON-RPC over HTTP between per-agent API route endpoints |
+| **x402** | USDC payment settlement | HTTP 402 flow → on-chain USDC transfer → tx hash as `proofOfPayment` |
+| **MCP** | Agent tool access + Civic guardrails channel | Typed capability declarations, server-side inspection |
+| **Covenant AI** | Reputation computation + Sybil detection + explainable trust | Claude-powered engine writing enriched scores back on-chain |
 
-**Agent-to-Agent Communication (A2A)** — Full Google A2A protocol compliance. Agents publish Agent Cards advertising typed capabilities, discover peers, and exchange task requests via JSON-RPC over HTTP. All 4 agents run as internal Next.js API routes but communicate through real HTTP calls — genuine protocol compliance, not function calls pretending to be A2A.
+## Reputation Engine
 
-**Payment Settlement (x402)** — USDC payments settle on Base Sepolia via the x402 HTTP payment protocol. Agent A requests work, Agent B responds with HTTP 402, payment settles on-chain, transaction hash captured as `proofOfPayment` and attached to ERC-8004 feedback submissions. Real money, real transactions.
+The core component. Computes trust from economic outcomes, not subjective ratings.
 
-**Civic Guardrails (Two-Layer)** — Every agent interaction passes through Civic MCP inspection server-side with no client bypass path. Layer 1 inspects agent metadata at registration. Layer 2 inspects every task input for prompt injection, every output for malicious content, and validates tool calls against declared capabilities. Civic flags propagate to the reputation engine as high-weight negative signals.
+- **Stake-weighted scoring** — a 50 USDC job carries more signal than a 2 USDC job
+- **Directed payment graph** — constructed from on-chain transaction data
+- **PageRank-style trust propagation** — iterative graph scoring across agent relationships
+- **Sybil detection** — AI analysis of circular payment rings, uniform feedback patterns, reputation farming
+- **Signal synthesis** — payment outcomes + Civic flags + feedback history → single score per agent
+- **Explainable trust** — natural language reasoning generated per score, pinned to IPFS via Pinata
+- **On-chain write-back** — enriched scores committed via `appendResponse()`, the spec's designed extension point
 
-**AI Reputation Engine** — The core innovation. Reads feedback events from the ERC-8004 ReputationRegistry, applies stake-weighted scoring (a 50 USDC job carries more signal than a 2 USDC job), constructs a directed payment graph, runs PageRank-style trust propagation, and performs Sybil detection on circular payment patterns. Claude synthesizes all signals into a single score per agent with natural language explanations pinned to IPFS. Enriched scores write back on-chain via `appendResponse()` — the spec's designed extension point for exactly this kind of off-chain intelligence aggregator.
+## Civic Guardrails
 
-**Reputation-Based Task Routing** — The orchestrator routes work based on reputation. Agents below a threshold get excluded. Agents negotiate pricing through A2A message exchange — high-trust agents command higher rates. Emergent marketplace dynamics from reputation as economic signal.
+Two-layer inspection architecture. All server-side, no client bypass path.
+
+| Layer | Trigger | Inspects |
+|-------|---------|----------|
+| **Layer 1 — Identity** | Agent registration | Metadata validity, capability claims |
+| **Layer 2 — Behavioral** | Every agent-to-agent data transfer | Prompt injection in inputs, malicious content in outputs, tool call validation against declared capabilities |
+
+Civic flags propagate to the reputation engine as high-weight negative signals. Agents caught → score drops → excluded from task routing.
+
+## Agent Marketplace
+
+- **Discovery** — agents publish A2A Agent Cards with typed capabilities and reputation scores
+- **Negotiation** — price discovery via A2A message exchange with AI reasoning
+- **Reputation-based pricing** — high-trust agents command higher rates
+- **Threshold exclusion** — orchestrator blocks agents below a reputation floor from task assignment
+- **Wallet isolation** — 5 server-side wallets (4 agents + 1 system), Zod-validated at startup
 
 ## Dashboard
 
-Real-time single-page dashboard fed by SSE from a Vercel KV event log. Zustand manages client state.
+Real-time via SSE from Vercel KV event log. Zustand state management. Sub-2s update latency.
 
-- **Trust Graph** — `react-force-graph` renders agents as nodes sized by reputation score, colored by trust level (green/yellow/red), connected by payment relationship edges. Canvas rendering, not DOM — handles animation at 60fps.
-- **Reputation Cards** — Per-agent cards showing score, trend arrow, cumulative payment volume, and AI-generated explainable trust text pulled from IPFS.
-- **Activity Feed** — Scrolling event log tagged by protocol: `agent:registered`, `task:negotiated`, `payment:settled`, `civic:flagged`, `reputation:updated`. Latest 50 events with auto-scroll.
-- **Economic Summary** — Aggregate metrics: total USDC transacted, successful/failed job counts, active Sybil alerts, network health score.
-
-Updates within 2 seconds of any reputation change event. SSE auto-reconnects on disconnect.
+| Component | Details |
+|-----------|---------|
+| **Trust Graph** | `react-force-graph`, canvas-rendered at 60fps. Nodes sized by score, colored by trust level (green/yellow/red), edges from payment relationships |
+| **Reputation Cards** | Score, trend, payment volume, AI-generated explainable trust text from IPFS |
+| **Activity Feed** | Protocol-tagged events: `agent:registered`, `task:negotiated`, `payment:settled`, `civic:flagged`, `reputation:updated` |
+| **Economic Summary** | Total USDC transacted, job success/fail counts, Sybil alerts, network health score |
 
 ## Data Architecture
 
-Zero SQL databases. All persistent data lives on-chain or on IPFS:
+Zero SQL. All persistence on-chain or content-addressed.
 
-- Agent identities on ERC-8004 IdentityRegistry (on-chain, write-once)
-- Reputation scores on ERC-8004 ReputationRegistry (on-chain, updated per interaction)
-- Enriched AI scores via `appendResponse()` (on-chain)
-- Explanations and metadata on IPFS via Pinata (content-addressed, immutable)
-- Event log and cache in Vercel KV (ephemeral layer)
-- Payment proofs as on-chain transaction hashes
+| Data | Storage | Properties |
+|------|---------|------------|
+| Agent identities | ERC-8004 IdentityRegistry | On-chain, write-once |
+| Reputation scores | ERC-8004 ReputationRegistry | On-chain, updated per interaction |
+| Enriched AI scores | On-chain via `appendResponse()` | Written by reputation engine |
+| Explanations + metadata | IPFS via Pinata | Content-addressed, immutable |
+| Event log + cache | Vercel KV | Ephemeral, SSE source |
+| Payment proofs | On-chain tx hashes | Linked in `proofOfPayment` field |
 
-Every external dependency has a graceful degradation path: Civic unavailable → transactions proceed flagged as "unverified"; Pinata down → explanations cached in KV with retry queue; Base RPC slow → UI shows "pending" with last-known cached state; x402 facilitator fails → transaction aborted, error event logged.
+**Graceful degradation per dependency:**
+
+| Dependency | Failure Behavior |
+|------------|-----------------|
+| Civic MCP | Transactions proceed, flagged "unverified" |
+| Pinata IPFS | Explanations cached in KV, retry queue |
+| Base Sepolia RPC | UI shows "pending" with last-known cached state |
+| x402 Facilitator | Transaction aborted, error event logged |
 
 ## Novel Capabilities
 
 Verified across 70+ ERC-8004 projects — no other project attempts more than 3 of these:
 
 1. AI reputation aggregation with stake-weighted scoring and trust graph propagation
-2. Economic reputation derived from real payment outcomes, not subjective ratings
+2. Economic reputation from real payment outcomes, not subjective ratings
 3. First Civic integration with ERC-8004 (two-layer: identity + behavioral)
-4. Sybil detection via AI analysis of circular payment rings in the directed payment graph
-5. `appendResponse()` write-back — the spec describes an "off-chain data intelligence aggregator" calling this function; Covenant is that aggregator
+4. Sybil detection via AI analysis of circular payment rings in directed payment graphs
+5. `appendResponse()` write-back as the spec's envisioned off-chain intelligence aggregator
 6. Agent-to-agent price negotiation with reputation as the pricing signal
-7. Explainable trust with natural language reasoning generated per score and pinned to IPFS
+7. Explainable trust with natural language reasoning pinned to IPFS per score
