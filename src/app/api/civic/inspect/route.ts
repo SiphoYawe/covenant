@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    // Layer 2 behavioral — stub for Story 4.2
-    const response = await getCivicGateway().inspectBehavior(agentId, data, 'inbound');
+    // Layer 2 behavioral inspection
+    const response = await getCivicGateway().inspectBehavior(agentId, data, 'input');
     return NextResponse.json(response);
   } catch (error) {
     const isTimeout =

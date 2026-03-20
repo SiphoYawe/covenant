@@ -14,6 +14,8 @@ export const EVENT_TYPES = {
   CIVIC_BEHAVIORAL_CHECKED: 'civic:behavioral-checked',
   CIVIC_FLAGGED: 'civic:flagged',
   CIVIC_CLEARED: 'civic:cleared',
+  CIVIC_TOOL_BLOCKED: 'civic:tool-blocked',
+  CIVIC_RESOLVED: 'civic:resolved',
   REPUTATION_COMPUTING: 'reputation:computing',
   REPUTATION_UPDATED: 'reputation:updated',
   REPUTATION_EXPLANATION_STORED: 'reputation:explanation-stored',

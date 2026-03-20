@@ -1,10 +1,12 @@
 import { inspectIdentityMetadata } from './identity-inspector';
-import { CivicLayer } from './types';
-import type { CivicConfig, InspectionResponse, InspectionResult } from './types';
+import { inspectInput, inspectOutput } from './behavioral-inspector';
+import { CivicLayer, CivicSeverity } from './types';
+import type { CivicConfig, CivicFlag, InspectionResponse, InspectionResult } from './types';
 import type { AgentMetadata } from '@/lib/protocols/erc8004/types';
 import { createEventBus, Protocol, EVENT_TYPES } from '@/lib/events';
 import type { EventBus } from '@/lib/events';
 import { env } from '@/lib/config/env';
+import { kvLpush, kvLrange } from '@/lib/storage/kv';
 
 let _eventBus: EventBus | null = null;
 function getEventBus(): EventBus {
@@ -66,43 +68,131 @@ export class CivicGateway {
 
   /**
    * Layer 2: Inspect agent behavior at runtime.
-   * Stub — implemented in Story 4.2.
+   * Inspects incoming task requests (input) and outgoing deliverables (output).
    */
   async inspectBehavior(
     agentId: string,
-    _data: Record<string, unknown>,
-    _direction: 'inbound' | 'outbound',
+    data: Record<string, unknown>,
+    direction: 'input' | 'output',
+    targetAgentId?: string,
   ): Promise<InspectionResponse> {
-    return {
-      result: {
+    let result: InspectionResult;
+
+    try {
+      if (direction === 'input') {
+        result = await inspectInput(agentId, {
+          description: (data.description as string) || '',
+          capability: (data.capability as string) || '',
+          context: data.context as string | undefined,
+        });
+      } else {
+        result = await inspectOutput(agentId, {
+          deliverable: (data.deliverable as string) || '',
+          taskId: data.taskId as string | undefined,
+        });
+      }
+    } catch {
+      result = {
         passed: true,
         layer: CivicLayer.Behavioral,
         agentId,
-        warnings: ['Behavioral inspection not yet implemented'],
+        warnings: ['Civic MCP unavailable — proceeding unverified'],
         flags: [],
         verificationStatus: 'unverified',
         timestamp: Date.now(),
-      },
-    };
+      };
+    }
+
+    // Emit event based on result
+    if (result.passed) {
+      await getEventBus().emit({
+        type: EVENT_TYPES.CIVIC_BEHAVIORAL_CHECKED,
+        protocol: Protocol.Civic,
+        agentId,
+        targetAgentId,
+        data: {
+          layer: result.layer,
+          direction,
+          verificationStatus: result.verificationStatus,
+          passed: true,
+        },
+      });
+    } else {
+      await getEventBus().emit({
+        type: EVENT_TYPES.CIVIC_FLAGGED,
+        protocol: Protocol.Civic,
+        agentId,
+        targetAgentId,
+        data: {
+          layer: 'behavioral',
+          direction,
+          severity: result.flags[0]?.severity,
+          attackType: result.flags[0]?.attackType,
+          evidence: result.flags[0]?.evidence,
+        },
+      });
+    }
+
+    return { result };
   }
 
   /**
    * Validate a tool call against declared capabilities.
-   * Stub — implemented in Story 4.3.
+   * Local comparison — no external Civic API call needed.
    */
   async validateToolCall(
     agentId: string,
-    _toolName: string,
-    _declaredCapabilities: string[],
+    toolName: string,
+    declaredCapabilities: string[],
   ): Promise<InspectionResponse> {
+    if (declaredCapabilities.includes(toolName)) {
+      return {
+        result: {
+          passed: true,
+          layer: CivicLayer.Behavioral,
+          agentId,
+          warnings: [],
+          flags: [],
+          verificationStatus: 'verified',
+          timestamp: Date.now(),
+        },
+      };
+    }
+
+    const flag: CivicFlag = {
+      id: crypto.randomUUID(),
+      agentId,
+      timestamp: Date.now(),
+      severity: CivicSeverity.High,
+      layer: CivicLayer.Behavioral,
+      attackType: 'capability_mismatch',
+      evidence: `Agent "${agentId}" attempted to call tool "${toolName}" which is not in declared capabilities: [${declaredCapabilities.join(', ')}]`,
+    };
+
+    // Store flag in KV
+    await kvLpush(`agent:${agentId}:civic-flags`, JSON.stringify(flag));
+
+    // Emit event
+    await getEventBus().emit({
+      type: EVENT_TYPES.CIVIC_TOOL_BLOCKED,
+      protocol: Protocol.Civic,
+      agentId,
+      data: {
+        attemptedTool: toolName,
+        declaredCapabilities,
+        severity: flag.severity,
+        attackType: flag.attackType,
+      },
+    });
+
     return {
       result: {
-        passed: true,
-        layer: CivicLayer.Identity,
+        passed: false,
+        layer: CivicLayer.Behavioral,
         agentId,
-        warnings: ['Tool call validation not yet implemented'],
-        flags: [],
-        verificationStatus: 'unverified',
+        warnings: [flag.evidence],
+        flags: [flag],
+        verificationStatus: 'flagged',
         timestamp: Date.now(),
       },
     };
