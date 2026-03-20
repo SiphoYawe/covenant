@@ -124,3 +124,49 @@ export type LifecycleState = {
   civicFlags: CivicFlag[];
   startedAt: number;
 };
+
+// --- Demo state types (Story 8.1) ---
+
+/** Demo narrative acts */
+export enum DemoAct {
+  Idle = 'Idle',
+  Registration = 'Registration',
+  EconomyWorks = 'EconomyWorks',
+  VillainAttacks = 'VillainAttacks',
+  Consequences = 'Consequences',
+  Payoff = 'Payoff',
+}
+
+/** Demo execution status */
+export enum DemoStatus {
+  Idle = 'Idle',
+  Running = 'Running',
+  Completed = 'Completed',
+  Failed = 'Failed',
+  Resetting = 'Resetting',
+}
+
+/** Persisted demo state in KV */
+export type DemoState = {
+  act: DemoAct;
+  status: DemoStatus;
+  startedAt: number | null;
+  completedAt: number | null;
+  error?: string;
+};
+
+/** Registered agent entry for current demo run */
+export type DemoAgentEntry = {
+  agentId: string;
+  tokenId: string;
+  walletAddress: string;
+  registeredAt: number;
+};
+
+/** Result of a demo reset operation */
+export type DemoResetResult = {
+  success: boolean;
+  keysCleared: number;
+  resetAt: number;
+  error?: string;
+};

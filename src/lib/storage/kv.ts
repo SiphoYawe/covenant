@@ -28,3 +28,15 @@ export async function kvLpush(key: string, value: string): Promise<void> {
 export async function kvLrange(key: string, start: number, end: number): Promise<string[]> {
   return kv.lrange(key, start, end);
 }
+
+/** Scan for keys matching a pattern using SCAN (non-blocking unlike KEYS) */
+export async function kvScan(pattern: string): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor = 0;
+  do {
+    const result: [string, string[]] = await kv.scan(cursor, { match: pattern, count: 100 });
+    cursor = Number(result[0]);
+    keys.push(...result[1]);
+  } while (cursor !== 0);
+  return keys;
+}
