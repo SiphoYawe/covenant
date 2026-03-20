@@ -37,3 +37,31 @@ export type FeedbackData = {
   endpoint?: string;
   feedbackURI?: string;
 };
+
+/** Feedback submission data for giveFeedback on ReputationRegistry (Story 3.4) */
+export type FeedbackSubmission = {
+  targetAgentId: string;
+  isPositive: boolean;
+  feedbackURI: string;
+  proofOfPayment: string;
+  feedbackerAgentId: string;
+};
+
+/** Result of a successful feedback submission (Story 3.4) */
+export type FeedbackResult = {
+  txHash: string;
+  feedbackerAgentId: string;
+  targetAgentId: string;
+  isPositive: boolean;
+  timestamp: number;
+};
+
+/** On-chain FeedbackGiven event (Story 3.4) */
+export type FeedbackEvent = {
+  targetAgentId: string;
+  feedbackerAddress: string;
+  isPositive: boolean;
+  feedbackURI: string;
+  blockNumber: number;
+  txHash: string;
+};
