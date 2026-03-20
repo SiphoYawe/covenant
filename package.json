@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.80.0",
     "@sentry/nextjs": "^10.45.0",
     "@vercel/kv": "^3.0.0",
+    "agent0-sdk": "^1.7.1",
     "next": "16.2.0",
     "pinata": "^2.5.5",
     "react": "19.2.4",
