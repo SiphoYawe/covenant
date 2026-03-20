@@ -25,6 +25,15 @@ export const EVENT_TYPES = {
   DEMO_ACT_CHANGED: 'demo:act-changed',
   DEMO_RESET: 'demo:reset',
   DEMO_COMPLETE: 'demo:complete',
+  ORCHESTRATOR_ROUTED: 'orchestrator:routed',
+  ORCHESTRATOR_ROUTING_FAILED: 'orchestrator:routing-failed',
+  LIFECYCLE_STARTED: 'lifecycle:started',
+  LIFECYCLE_STEP_COMPLETED: 'lifecycle:step-completed',
+  LIFECYCLE_COMPLETED: 'lifecycle:completed',
+  LIFECYCLE_FAILED: 'lifecycle:failed',
+  LIFECYCLE_PAYMENT_FAILED: 'lifecycle:payment-failed',
+  LIFECYCLE_CIVIC_BLOCKED: 'lifecycle:civic-blocked',
+  LIFECYCLE_NEGOTIATION_FAILED: 'lifecycle:negotiation-failed',
 } as const;
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];

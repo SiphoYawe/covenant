@@ -1,3 +1,8 @@
+import type { CivicFlag } from '@/lib/civic/types';
+import type { ApiError } from '@/types';
+
+// --- Negotiation types (Story 2.5) ---
+
 /** Status of a price negotiation */
 export type NegotiationStatus = 'negotiating' | 'agreed' | 'rejected' | 'expired';
 
@@ -37,4 +42,85 @@ export type NegotiationParams = {
   taskDescription: string;
   initialOffer: number;
   maxRounds?: number;
+};
+
+// --- Routing types (Story 6.1) ---
+
+/** An agent considered for routing */
+export type CandidateAgent = {
+  agentId: string;
+  role: string;
+  reputationScore: number;
+};
+
+/** An agent excluded from routing */
+export type ExcludedAgent = {
+  agentId: string;
+  role: string;
+  reputationScore: number;
+  exclusionReason: string;
+};
+
+/** Configuration for a routing decision */
+export type RoutingConfig = {
+  reputationThreshold: number;
+  capability: string;
+};
+
+/** Result of a routing decision */
+export type RoutingDecision = {
+  selectedAgentId: string;
+  capability: string;
+  candidates: CandidateAgent[];
+  excluded: ExcludedAgent[];
+  reason: string;
+};
+
+// --- Lifecycle types (Story 6.2) ---
+
+/** Lifecycle steps in execution order */
+export enum LifecycleStep {
+  Discovery = 'Discovery',
+  Routing = 'Routing',
+  Negotiation = 'Negotiation',
+  CivicInputInspection = 'CivicInputInspection',
+  Payment = 'Payment',
+  Execution = 'Execution',
+  CivicOutputInspection = 'CivicOutputInspection',
+  Evaluation = 'Evaluation',
+  Feedback = 'Feedback',
+  ReputationUpdate = 'ReputationUpdate',
+}
+
+/** Request to start a lifecycle */
+export type LifecycleRequest = {
+  requesterId: string;
+  taskDescription: string;
+  capability: string;
+  maxBudget?: number;
+};
+
+/** Result of a completed lifecycle */
+export type LifecycleResult = {
+  success: boolean;
+  selectedAgentId: string;
+  negotiatedPrice: number;
+  paymentTxHash?: string;
+  deliverable?: string;
+  feedbackTxHash?: string;
+  reputationUpdated: boolean;
+  civicFlags: CivicFlag[];
+  error?: ApiError;
+};
+
+/** State accumulated across lifecycle steps */
+export type LifecycleState = {
+  currentStep: LifecycleStep;
+  requesterId: string;
+  selectedAgentId?: string;
+  negotiatedPrice?: number;
+  paymentTxHash?: string;
+  deliverable?: string;
+  civicFlags: CivicFlag[];
+  startedAt: number;
 };

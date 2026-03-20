@@ -24,3 +24,9 @@ export const CLAUDE_MAX_TOKENS = 1024;
 
 /** Reputation recomputation timeout (ms) */
 export const REPUTATION_TIMEOUT_MS = 60_000;
+
+/** Default reputation threshold for task routing exclusion (Story 6.1) */
+export const DEFAULT_REPUTATION_THRESHOLD = 3.0;
+
+/** Default neutral reputation for agents with no scores yet (Story 6.1) */
+export const DEFAULT_NEUTRAL_REPUTATION = 5.0;
