@@ -15,6 +15,14 @@ vi.mock('@/lib/wallets', () => ({
   getAddress: vi.fn().mockReturnValue('0x1234567890abcdef1234567890abcdef12345678'),
 }));
 
+vi.mock('@/lib/civic', () => ({
+  getCivicGateway: () => ({
+    validateToolCall: vi.fn().mockResolvedValue({
+      result: { passed: true, layer: 'behavioral', agentId: 'test', warnings: [], flags: [], verificationStatus: 'verified', timestamp: Date.now() },
+    }),
+  }),
+}));
+
 describe('executeTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();

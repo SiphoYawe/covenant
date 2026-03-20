@@ -5,6 +5,7 @@ import { executeResearcherTask } from '@/lib/agents/researcher';
 import { executeReviewerTask } from '@/lib/agents/reviewer';
 import { executeSummarizerTask } from '@/lib/agents/summarizer';
 import { executeMaliciousTask } from '@/lib/agents/malicious';
+import { getCivicGateway } from '@/lib/civic';
 
 /** Execute an MCP tool for a given agent */
 export async function executeTool(
@@ -12,8 +13,21 @@ export async function executeTool(
   args: Record<string, unknown>,
   agentRole: DemoAgentRole
 ): Promise<MCPToolResult> {
-  // Verify the tool exists for this role
+  // Civic: Validate tool call against declared capabilities
   const tools = getToolsForRole(agentRole);
+  const declaredCapabilities = tools.map((t) => t.name);
+
+  const gateway = getCivicGateway();
+  const validation = await gateway.validateToolCall(agentRole, toolName, declaredCapabilities);
+
+  if (!validation.result.passed) {
+    return {
+      content: [{ type: 'text', text: `CIVIC_BLOCKED: Tool "${toolName}" is not in agent "${agentRole}" declared capabilities` }],
+      isError: true,
+    };
+  }
+
+  // Verify the tool exists for this role
   const tool = tools.find((t) => t.name === toolName);
 
   if (!tool) {
