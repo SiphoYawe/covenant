@@ -13,6 +13,7 @@ describe('Environment Validation', () => {
     KV_REST_API_URL: 'https://kv.vercel.com',
     KV_REST_API_TOKEN: 'token123',
     CIVIC_MCP_ENDPOINT: 'https://civic.example.com',
+    CIVIC_TOKEN: 'civic-test-token',
     X402_FACILITATOR_URL: 'https://x402.example.com',
     SENTRY_DSN: 'https://sentry.example.com/123',
   };

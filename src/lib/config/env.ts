@@ -12,6 +12,7 @@ export const envSchema = z.object({
   KV_REST_API_URL: z.string().url(),
   KV_REST_API_TOKEN: z.string().min(1),
   CIVIC_MCP_ENDPOINT: z.string().url(),
+  CIVIC_TOKEN: z.string().min(1),
   X402_FACILITATOR_URL: z.string().url(),
   SENTRY_DSN: z.string().url(),
 });
