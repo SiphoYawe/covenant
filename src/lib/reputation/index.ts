@@ -5,6 +5,7 @@ export type {
   GraphNode,
   PaymentGraph,
   SybilAlert,
+  SybilPatternType,
   ReputationFeedbackEvent,
   FeedbackRecord,
   WeightedFeedback,
@@ -14,6 +15,18 @@ export type {
   TrustPropagationResult,
   ReputationComputeRequest,
   ReputationComputeResult,
+  TransactionRecord,
+  ExtractedPatterns,
+  AgentContext,
+  SybilDetectionInput,
+  SybilDetectionResult,
+  ScoreSynthesisInput,
+  ScoreSynthesisResult,
+  SynthesisWeights,
+  AgentClassification,
+  ExplanationInput,
+  ExplanationResult,
+  AgentReputationCache,
 } from './types';
 
 export {
@@ -22,6 +35,7 @@ export {
   GraphNodeSchema,
   PaymentGraphSchema,
   SybilAlertSchema,
+  SybilPatternTypes,
   FeedbackEventSchema,
   FeedbackRecordSchema,
   WeightedFeedbackSchema,
@@ -44,7 +58,20 @@ export { buildGraph, getGraph, saveGraph, addTransaction, getNodeEdges, getEdges
 export { computeTrustPropagation, getTrustScore, getAgentTrustScores, getGlobalTrustRanking } from './trust-propagation';
 
 // Sybil detection (Story 5.5)
-export { detectSybilPatterns } from './sybil-detection';
+export {
+  detectSybilPatterns,
+  storeSybilAlerts,
+  getSybilAlerts,
+  getSybilAlertsForAgent,
+  extractCircularPayments,
+  extractUniformFeedback,
+  extractTransactionPadding,
+  extractRapidRepeats,
+  analyzePatternsWithAI,
+} from './sybil-detection';
+
+// Score synthesis (Story 5.6)
+export { synthesizeScore, classifyAgent, synthesizeAllScores } from './score-synthesis';
 
 // Explanation (Story 5.7)
-export { generateExplanation } from './explanation';
+export { generateExplanation, storeExplanation, cacheReputationWithExplanation, generateAndStoreExplanation, retryDeferredPinning } from './explanation';

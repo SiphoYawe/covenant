@@ -42,20 +42,130 @@ export type ReputationScore = z.infer<typeof ReputationScoreSchema>;
 
 // --- Sybil alerts ---
 
+export const SybilPatternTypes = [
+  'circular_payments',
+  'uniform_feedback',
+  'reputation_farming',
+  'rapid_transactions',
+  'adversarial_behavior',
+] as const;
+export type SybilPatternType = (typeof SybilPatternTypes)[number];
+
 export const SybilAlertSchema = z.object({
   id: z.string(),
-  patternType: z.enum([
-    'circular_payments',
-    'uniform_feedback',
-    'reputation_farming',
-    'rapid_transactions',
-  ]),
+  patternType: z.enum(SybilPatternTypes),
   involvedAgents: z.array(z.string()),
   confidence: z.number().min(0).max(1),
   evidence: z.string(),
   timestamp: z.number(),
 });
 export type SybilAlert = z.infer<typeof SybilAlertSchema>;
+
+// --- Sybil detection types (Story 5.5) ---
+
+export type TransactionRecord = {
+  from: string;
+  to: string;
+  amount: number;
+  timestamp: number;
+  txHash: string;
+  feedbackValue: number;
+};
+
+export type ExtractedPatterns = {
+  circularPayments: Array<{ cycle: string[]; edgeCount: number }>;
+  uniformFeedback: Array<{ agentId: string; feedbackValues: number[]; variance: number }>;
+  transactionPadding: Array<{ agentId: string; tinyTxCount: number; totalTxCount: number }>;
+  rapidRepeats: Array<{ pair: [string, string]; count: number; windowMs: number }>;
+};
+
+export type AgentContext = {
+  agentId: string;
+  civicFlags: Array<{ severity: string; attackType: string; evidence: string }>;
+  feedbackHistory: Array<{ value: number; outcome: string }>;
+};
+
+export type SybilDetectionInput = {
+  graph: PaymentGraph;
+  transactionHistory: TransactionRecord[];
+  agentIds: string[];
+};
+
+export type SybilDetectionResult = {
+  alerts: SybilAlert[];
+  analysisTimestamp: number;
+  reasoning: string;
+};
+
+// --- Score synthesis types (Story 5.6) ---
+
+export type ScoreSynthesisInput = {
+  agentId: string;
+  stakeWeightedScore: number;
+  trustPropagationScore: number;
+  sybilAlerts: SybilAlert[];
+  civicPenalty: number;
+  hasNegativeFeedback: boolean;
+};
+
+export type AgentClassification = 'trusted' | 'neutral' | 'suspicious' | 'adversarial';
+
+export type SynthesisWeights = {
+  stakeWeight: number;
+  trustPropagationWeight: number;
+  sybilPenaltyWeight: number;
+  civicPenaltyWeight: number;
+};
+
+export type ScoreSynthesisResult = {
+  agentId: string;
+  finalScore: number;
+  components: {
+    stakeWeightedScore: number;
+    trustPropagationScore: number;
+    sybilPenalty: number;
+    civicPenalty: number;
+  };
+  classification: AgentClassification;
+};
+
+// --- Explanation types (Story 5.7) ---
+
+export type ExplanationInput = {
+  agentId: string;
+  agentName: string;
+  agentRole: string;
+  score: number;
+  classification: AgentClassification;
+  jobCount: number;
+  successRate: number;
+  failureRate: number;
+  paymentVolume: number;
+  civicFlags: Array<{ severity: string; attackType: string; evidence: string }>;
+  trustGraphPosition: {
+    inboundTrust: number;
+    outboundTrust: number;
+  };
+  sybilAlerts: SybilAlert[];
+  stakeWeightedAverage: number;
+};
+
+export type ExplanationResult = {
+  agentId: string;
+  explanation: string;
+  cid: string | null;
+  storedInKV: boolean;
+  retryPinning: boolean;
+  generatedAt: number;
+};
+
+export type AgentReputationCache = {
+  score: number;
+  explanationCID: string | null;
+  explanationText: string | null;
+  retryPinning: boolean;
+  updatedAt: number;
+};
 
 // --- Feedback event (reputation engine internal) ---
 
