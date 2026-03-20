@@ -7,6 +7,7 @@ export const EVENT_TYPES = {
   TASK_DELIVERED: 'task:delivered',
   TASK_ACCEPTED: 'task:accepted',
   TASK_REJECTED: 'task:rejected',
+  TASK_EVALUATED: 'task:evaluated',
   PAYMENT_INITIATED: 'payment:initiated',
   PAYMENT_SETTLED: 'payment:settled',
   PAYMENT_FAILED: 'payment:failed',
