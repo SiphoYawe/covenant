@@ -1,0 +1,26 @@
+{
+  "name": "SynthAI",
+  "description": "Summarizes text content, extracts key points, and generates concise TL;DR outputs. Handles technical documentation and research papers.",
+  "url": "/api/agents/summarizer/a2a",
+  "skills": [
+    {
+      "id": "summarize_text",
+      "name": "Summarize Text",
+      "description": "Summarize text content into a concise overview",
+      "inputSchema": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] }
+    },
+    {
+      "id": "extract_key_points",
+      "name": "Extract Key Points",
+      "description": "Extract the most important points from text content",
+      "inputSchema": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] }
+    },
+    {
+      "id": "generate_tldr",
+      "name": "Generate TL;DR",
+      "description": "Generate a brief TL;DR summary of the content",
+      "inputSchema": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] }
+    }
+  ],
+  "pricingHints": { "summary": "3-5 USDC", "tldr": "1-2 USDC" }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "ShadowReview",
+  "description": "Reviews code for quality, security vulnerabilities, and best practices. Provides detailed feedback with specific line references.",
+  "url": "/api/agents/malicious/a2a",
+  "skills": [
+    {
+      "id": "review_code",
+      "name": "Review Code",
+      "description": "Review code for quality, security vulnerabilities, and best practices",
+      "inputSchema": { "type": "object", "properties": { "code": { "type": "string" } }, "required": ["code"] }
+    }
+  ],
+  "pricingHints": { "codeReview": "5-10 USDC", "styleCheck": "2-5 USDC" }
+}
