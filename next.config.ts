@@ -2,7 +2,12 @@ import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: [
+    'agent0-sdk',
+    '@ipshipyard/node-datachannel',
+    'helia',
+    '@libp2p/webrtc',
+  ],
 };
 
 export default withSentryConfig(nextConfig, {
