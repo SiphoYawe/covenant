@@ -4,7 +4,7 @@ AI-powered economic reputation layer for ERC-8004. Operates on top of existing r
 
 ## Protocol Integration
 
-Five protocols compose into a single agent transaction lifecycle. All load-bearing — remove any one and the system breaks.
+Five protocols compose into a single agent transaction lifecycle. All load-bearing. Remove any one and the system breaks.
 
 | Protocol | Role | Implementation |
 |----------|------|----------------|
@@ -18,13 +18,13 @@ Five protocols compose into a single agent transaction lifecycle. All load-beari
 
 The core component. Computes trust from economic outcomes, not subjective ratings.
 
-- **Stake-weighted scoring** — a 50 USDC job carries more signal than a 2 USDC job
-- **Directed payment graph** — constructed from on-chain transaction data
-- **PageRank-style trust propagation** — iterative graph scoring across agent relationships
-- **Sybil detection** — AI analysis of circular payment rings, uniform feedback patterns, reputation farming
-- **Signal synthesis** — payment outcomes + Civic flags + feedback history → single score per agent
-- **Explainable trust** — natural language reasoning generated per score, pinned to IPFS via Pinata
-- **On-chain write-back** — enriched scores committed via `appendResponse()`, the spec's designed extension point
+- **Stake-weighted scoring**a 50 USDC job carries more signal than a 2 USDC job
+- **Directed payment graph**constructed from on-chain transaction data
+- **PageRank-style trust propagation**iterative graph scoring across agent relationships
+- **Sybil detection**AI analysis of circular payment rings, uniform feedback patterns, reputation farming
+- **Signal synthesis**payment outcomes + Civic flags + feedback history → single score per agent
+- **Explainable trust**natural language reasoning generated per score, pinned to IPFS via Pinata
+- **On-chain write-back**enriched scores committed via `appendResponse()`, the spec's designed extension point
 
 ## Civic Guardrails
 
@@ -32,18 +32,18 @@ Two-layer inspection architecture. All server-side, no client bypass path.
 
 | Layer | Trigger | Inspects |
 |-------|---------|----------|
-| **Layer 1 — Identity** | Agent registration | Metadata validity, capability claims |
-| **Layer 2 — Behavioral** | Every agent-to-agent data transfer | Prompt injection in inputs, malicious content in outputs, tool call validation against declared capabilities |
+| **Layer 1: Identity** | Agent registration | Metadata validity, capability claims |
+| **Layer 2: Behavioral** | Every agent-to-agent data transfer | Prompt injection in inputs, malicious content in outputs, tool call validation against declared capabilities |
 
 Civic flags propagate to the reputation engine as high-weight negative signals. Agents caught → score drops → excluded from task routing.
 
 ## Agent Marketplace
 
-- **Discovery** — agents publish A2A Agent Cards with typed capabilities and reputation scores
-- **Negotiation** — price discovery via A2A message exchange with AI reasoning
-- **Reputation-based pricing** — high-trust agents command higher rates
-- **Threshold exclusion** — orchestrator blocks agents below a reputation floor from task assignment
-- **Wallet isolation** — 5 server-side wallets (4 agents + 1 system), Zod-validated at startup
+- **Discovery**agents publish A2A Agent Cards with typed capabilities and reputation scores
+- **Negotiation**price discovery via A2A message exchange with AI reasoning
+- **Reputation-based pricing**high-trust agents command higher rates
+- **Threshold exclusion**orchestrator blocks agents below a reputation floor from task assignment
+- **Wallet isolation**5 server-side wallets (4 agents + 1 system), Zod-validated at startup
 
 ## Dashboard
 
@@ -80,7 +80,7 @@ Zero SQL. All persistence on-chain or content-addressed.
 
 ## Novel Capabilities
 
-Verified across 70+ ERC-8004 projects — no other project attempts more than 3 of these:
+Verified across 70+ ERC-8004 projects. No other project attempts more than 3 of these:
 
 1. AI reputation aggregation with stake-weighted scoring and trust graph propagation
 2. Economic reputation from real payment outcomes, not subjective ratings
