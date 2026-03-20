@@ -38,7 +38,7 @@ export { triggerReputationPipeline, parseFeedbackEvent } from './engine';
 export { computeStakeWeights, ZERO_STAKE_WEIGHT } from './stake-weighting';
 
 // Graph (Story 5.3)
-export { buildGraph, getGraph, saveGraph } from './graph';
+export { buildGraph, getGraph, saveGraph, addTransaction, getNodeEdges, getEdgesBetween, getAgentNode } from './graph';
 
 // Trust propagation (Story 5.4)
 export { computeTrustPropagation } from './trust-propagation';
