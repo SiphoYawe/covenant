@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { executePayment } from '@/lib/protocols/x402/client';
+import { recordPaymentProofs } from '@/lib/protocols/x402/proof';
 import { createEventBus, Protocol, EVENT_TYPES } from '@/lib/events';
 
 const paymentSchema = z.object({
@@ -28,6 +29,16 @@ export async function POST(request: Request) {
     try {
       const result = await executePayment({ payerAgentId, payeeAgentId, amount, taskId });
 
+      // Record dual-entry payment proofs (payer outgoing + payee incoming)
+      await recordPaymentProofs({
+        txHash: result.txHash,
+        payerAgentId,
+        payeeAgentId,
+        amount: result.amount,
+        timestamp: result.timestamp,
+        taskId,
+      });
+
       // Emit payment:settled event
       await eventBus.emit({
         type: EVENT_TYPES.PAYMENT_SETTLED,
@@ -42,7 +53,7 @@ export async function POST(request: Request) {
         },
       });
 
-      return NextResponse.json(result);
+      return NextResponse.json({ ...result, proofOfPayment: result.txHash });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Payment failed';
 
