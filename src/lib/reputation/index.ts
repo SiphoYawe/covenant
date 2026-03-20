@@ -41,7 +41,7 @@ export { computeStakeWeights, ZERO_STAKE_WEIGHT } from './stake-weighting';
 export { buildGraph, getGraph, saveGraph, addTransaction, getNodeEdges, getEdgesBetween, getAgentNode } from './graph';
 
 // Trust propagation (Story 5.4)
-export { computeTrustPropagation } from './trust-propagation';
+export { computeTrustPropagation, getTrustScore, getAgentTrustScores, getGlobalTrustRanking } from './trust-propagation';
 
 // Sybil detection (Story 5.5)
 export { detectSybilPatterns } from './sybil-detection';
