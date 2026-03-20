@@ -14,12 +14,23 @@ vi.mock('@vercel/kv', () => {
         sortedSets.set(key, set);
         return 1;
       }),
-      zrangebyscore: vi.fn(async (key: string, min: number | string, max: number | string) => {
+      zrange: vi.fn(async (key: string, min: number | string, max: number | string, opts?: { byScore?: boolean }) => {
         const set = sortedSets.get(key) || [];
-        const minNum = typeof min === 'string' ? -Infinity : min;
-        const maxNum = typeof max === 'string' ? Infinity : max;
+        // Parse exclusive bound syntax: "(123" means > 123
+        const parseMin = (v: number | string): number => {
+          if (typeof v === 'string' && v.startsWith('(')) return Number(v.slice(1));
+          if (typeof v === 'string') return v === '-' ? -Infinity : Number(v);
+          return v;
+        };
+        const parseMax = (v: number | string): number => {
+          if (typeof v === 'string') return (v === '+' || v === '+inf') ? Infinity : Number(v);
+          return v;
+        };
+        const minNum = parseMin(min);
+        const maxNum = parseMax(max);
+        const exclusive = typeof min === 'string' && min.startsWith('(');
         return set
-          .filter((item) => item.score >= minNum && item.score <= maxNum)
+          .filter((item) => (exclusive ? item.score > minNum : item.score >= minNum) && item.score <= maxNum)
           .sort((a, b) => a.score - b.score)
           .map((item) => item.member);
       }),

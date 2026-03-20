@@ -28,8 +28,10 @@ export function createEventBus(): EventBus {
     },
 
     async since(cursor: number): Promise<DemoEvent[]> {
-      // cursor + 1 for exclusive lower bound (don't re-deliver the cursor event)
-      const raw = await kv.zrangebyscore(EVENTS_KEY, cursor + 1, '+inf');
+      // Exclusive lower bound via `(` prefix — don't re-deliver the cursor event
+      const raw = await kv.zrange(EVENTS_KEY, `(${cursor}`, '+inf', {
+        byScore: true,
+      });
       return (raw as string[]).map((item) => JSON.parse(item) as DemoEvent);
     },
   };
