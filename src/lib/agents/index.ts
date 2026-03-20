@@ -1,2 +1,2 @@
-// TODO: Export public API — implemented in later stories
-export {};
+export { AGENT_CONFIGS, DEMO_AGENT_ROLES, generateMetadata, getAgentConfig } from './config';
+export type { AgentConfig, DemoAgentRole } from './types';
