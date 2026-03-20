@@ -1,4 +1,5 @@
 export { generateAgentCard, getAgentCard } from './agent-card';
+export { discoverAgents } from './client';
 export type {
   AgentCard,
   Skill,
