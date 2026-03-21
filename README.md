@@ -2,6 +2,18 @@
 
 AI-powered economic reputation layer for ERC-8004. Operates on top of existing registries (130k+ agents, 40+ chains, 16.5k on Base) at the extension point the spec explicitly left open: `appendResponse()`.
 
+## Novel Capabilities
+
+Verified across 70+ ERC-8004 projects. No other project attempts more than 3 of these:
+
+1. AI reputation aggregation with stake-weighted scoring and trust graph propagation
+2. Economic reputation from real payment outcomes, not subjective ratings
+3. First Civic integration with ERC-8004 (two-layer: identity + behavioral)
+4. Sybil detection via AI analysis of circular payment rings in directed payment graphs
+5. `appendResponse()` write-back as the spec's envisioned off-chain intelligence aggregator
+6. Agent-to-agent price negotiation with reputation as the pricing signal
+7. Explainable trust with natural language reasoning pinned to IPFS per score
+
 ## Protocol Integration
 
 Five protocols compose into a single agent transaction lifecycle. All load-bearing. Remove any one and the system breaks.
@@ -69,23 +81,3 @@ Zero SQL. All persistence on-chain or content-addressed.
 | Event log + cache | Vercel KV | Ephemeral, SSE source |
 | Payment proofs | On-chain tx hashes | Linked in `proofOfPayment` field |
 
-**Graceful degradation per dependency:**
-
-| Dependency | Failure Behavior |
-|------------|-----------------|
-| Civic MCP | Transactions proceed, flagged "unverified" |
-| Pinata IPFS | Explanations cached in KV, retry queue |
-| Base Sepolia RPC | UI shows "pending" with last-known cached state |
-| x402 Facilitator | Transaction aborted, error event logged |
-
-## Novel Capabilities
-
-Verified across 70+ ERC-8004 projects. No other project attempts more than 3 of these:
-
-1. AI reputation aggregation with stake-weighted scoring and trust graph propagation
-2. Economic reputation from real payment outcomes, not subjective ratings
-3. First Civic integration with ERC-8004 (two-layer: identity + behavioral)
-4. Sybil detection via AI analysis of circular payment rings in directed payment graphs
-5. `appendResponse()` write-back as the spec's envisioned off-chain intelligence aggregator
-6. Agent-to-agent price negotiation with reputation as the pricing signal
-7. Explainable trust with natural language reasoning pinned to IPFS per score
