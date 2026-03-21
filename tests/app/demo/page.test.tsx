@@ -12,13 +12,8 @@ const mockTriggerReset = vi.fn();
 vi.mock('@/hooks/use-demo', () => ({
   useDemo: () => ({
     reset: mockReset,
-    triggerAct: vi.fn(),
     isResetting: false,
     resetError: null,
-    demoState: { currentAct: 0, status: 'idle' },
-    currentAct: 'Idle',
-    isRunning: false,
-    isIdle: true,
   }),
   useLiveTrigger: () => ({
     execute: mockExecute,
@@ -31,7 +26,7 @@ vi.mock('@/hooks/use-demo', () => ({
 }));
 
 const mockStore = {
-  demoState: { currentAct: 0, status: 'idle' },
+  demoState: { status: 'idle' },
   events: [],
   agents: {},
   edges: [],
@@ -65,7 +60,7 @@ const useDashboardStoreMock = Object.assign(
 );
 
 vi.mock('@/stores/dashboard', () => ({
-  useDemoState: () => ({ currentAct: 0, status: 'idle' }),
+  useDemoState: () => ({ status: 'idle' }),
   useEvents: () => [],
   useDashboardStore: useDashboardStoreMock,
 }));

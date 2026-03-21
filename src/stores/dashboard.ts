@@ -37,8 +37,7 @@ export type EconomicMetrics = {
 };
 
 export type DemoState = {
-  currentAct: number;
-  status: 'idle' | 'running' | 'complete';
+  status: 'idle' | 'seeded' | 'running' | 'complete';
 };
 
 export type DashboardState = {
@@ -90,7 +89,6 @@ const initialState: DashboardState = {
     totalFeedback: 0,
   },
   demoState: {
-    currentAct: 0,
     status: 'idle',
   },
   selectedAgentId: null,
@@ -159,7 +157,6 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
       case EVENT_TYPES.DEMO_ACT_CHANGED:
         set({
           demoState: {
-            currentAct: data.act as number,
             status: data.status as DemoState['status'],
           },
         });

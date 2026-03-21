@@ -125,21 +125,12 @@ export type LifecycleState = {
   startedAt: number;
 };
 
-// --- Demo state types (Story 8.1) ---
-
-/** Demo narrative acts */
-export enum DemoAct {
-  Idle = 'Idle',
-  Registration = 'Registration',
-  EconomyWorks = 'EconomyWorks',
-  VillainAttacks = 'VillainAttacks',
-  Consequences = 'Consequences',
-  Payoff = 'Payoff',
-}
+// --- Demo state types (seed-based platform) ---
 
 /** Demo execution status */
 export enum DemoStatus {
   Idle = 'Idle',
+  Seeded = 'Seeded',
   Running = 'Running',
   Completed = 'Completed',
   Failed = 'Failed',
@@ -148,8 +139,8 @@ export enum DemoStatus {
 
 /** Persisted demo state in KV */
 export type DemoState = {
-  act: DemoAct;
   status: DemoStatus;
+  seededAt: number | null;
   startedAt: number | null;
   completedAt: number | null;
   error?: string;

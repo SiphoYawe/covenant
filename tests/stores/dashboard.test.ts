@@ -124,12 +124,11 @@ describe('Dashboard Store', () => {
       useDashboardStore.getState().addEvent(
         makeEvent({
           type: 'demo:act-changed',
-          data: { act: 3, status: 'running' },
+          data: { status: 'running' },
         }),
       );
 
       const { demoState } = useDashboardStore.getState();
-      expect(demoState.currentAct).toBe(3);
       expect(demoState.status).toBe('running');
     });
 
@@ -254,7 +253,6 @@ describe('Dashboard Store', () => {
       expect(state.edges).toHaveLength(0);
       expect(state.metrics.totalPayments).toBe(0);
       expect(state.metrics.totalTransactions).toBe(0);
-      expect(state.demoState.currentAct).toBe(0);
       expect(state.demoState.status).toBe('idle');
     });
   });

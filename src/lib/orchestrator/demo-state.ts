@@ -1,11 +1,11 @@
 import { kvGet, kvSet, kvDel, kvScan } from '@/lib/storage';
-import { DemoAct, DemoStatus } from './types';
+import { DemoStatus } from './types';
 import type { DemoState, DemoAgentEntry, DemoResetResult } from './types';
 import { DEMO_KV_KEYS, KV_PREFIXES_TO_CLEAR } from './constants';
 
 const INITIAL_STATE: DemoState = {
-  act: DemoAct.Idle,
   status: DemoStatus.Idle,
+  seededAt: null,
   startedAt: null,
   completedAt: null,
 };
@@ -21,12 +21,11 @@ export async function setDemoState(state: DemoState): Promise<void> {
   await kvSet(DEMO_KV_KEYS.STATE, state);
 }
 
-/** Update the current act and status, merging with existing state */
-export async function updateDemoAct(act: DemoAct, status: DemoStatus): Promise<DemoState> {
+/** Update demo status, merging with existing state */
+export async function updateDemoStatus(status: DemoStatus): Promise<DemoState> {
   const current = await getDemoState();
   const updated: DemoState = {
     ...current,
-    act,
     status,
     startedAt: status === DemoStatus.Running && current.startedAt === null
       ? Date.now()

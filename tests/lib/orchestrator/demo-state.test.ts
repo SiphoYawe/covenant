@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DemoAct, DemoStatus } from '@/lib/orchestrator/types';
+import { DemoStatus } from '@/lib/orchestrator/types';
 import type { DemoState, DemoAgentEntry } from '@/lib/orchestrator/types';
 
 // --- In-memory KV mock ---
@@ -32,8 +32,8 @@ describe('Demo State Manager', () => {
       const { getDemoState } = await import('@/lib/orchestrator/demo-state');
       const state = await getDemoState();
       expect(state).toEqual({
-        act: DemoAct.Idle,
         status: DemoStatus.Idle,
+        seededAt: null,
         startedAt: null,
         completedAt: null,
       });
@@ -41,8 +41,8 @@ describe('Demo State Manager', () => {
 
     it('returns stored state when KV key exists', async () => {
       const saved: DemoState = {
-        act: DemoAct.Registration,
         status: DemoStatus.Running,
+        seededAt: 500,
         startedAt: 1000,
         completedAt: null,
       };
@@ -58,8 +58,8 @@ describe('Demo State Manager', () => {
     it('writes state to KV under demo:state key', async () => {
       const { setDemoState } = await import('@/lib/orchestrator/demo-state');
       const state: DemoState = {
-        act: DemoAct.VillainAttacks,
         status: DemoStatus.Running,
+        seededAt: 500,
         startedAt: 2000,
         completedAt: null,
       };
@@ -68,40 +68,39 @@ describe('Demo State Manager', () => {
     });
   });
 
-  describe('updateDemoAct', () => {
-    it('reads current state, updates act and status, writes back', async () => {
+  describe('updateDemoStatus', () => {
+    it('reads current state, updates status, writes back', async () => {
       const initial: DemoState = {
-        act: DemoAct.Idle,
         status: DemoStatus.Idle,
+        seededAt: null,
         startedAt: null,
         completedAt: null,
       };
       store.set('demo:state', initial);
 
-      const { updateDemoAct } = await import('@/lib/orchestrator/demo-state');
-      const updated = await updateDemoAct(DemoAct.Registration, DemoStatus.Running);
+      const { updateDemoStatus } = await import('@/lib/orchestrator/demo-state');
+      const updated = await updateDemoStatus(DemoStatus.Running);
 
-      expect(updated.act).toBe(DemoAct.Registration);
       expect(updated.status).toBe(DemoStatus.Running);
     });
 
     it('sets startedAt timestamp when transitioning to Running', async () => {
-      const { updateDemoAct } = await import('@/lib/orchestrator/demo-state');
-      const updated = await updateDemoAct(DemoAct.Registration, DemoStatus.Running);
+      const { updateDemoStatus } = await import('@/lib/orchestrator/demo-state');
+      const updated = await updateDemoStatus(DemoStatus.Running);
       expect(updated.startedAt).toBeTypeOf('number');
       expect(updated.startedAt).toBeGreaterThan(0);
     });
 
     it('sets completedAt when status becomes Completed', async () => {
       store.set('demo:state', {
-        act: DemoAct.Registration,
         status: DemoStatus.Running,
+        seededAt: 500,
         startedAt: 1000,
         completedAt: null,
       });
 
-      const { updateDemoAct } = await import('@/lib/orchestrator/demo-state');
-      const updated = await updateDemoAct(DemoAct.Registration, DemoStatus.Completed);
+      const { updateDemoStatus } = await import('@/lib/orchestrator/demo-state');
+      const updated = await updateDemoStatus(DemoStatus.Completed);
       expect(updated.completedAt).toBeTypeOf('number');
       expect(updated.completedAt).toBeGreaterThan(0);
     });
@@ -179,7 +178,7 @@ describe('KV Reset Logic', () => {
   });
 
   it('deletes standalone keys demo:state and demo:agents', async () => {
-    store.set('demo:state', { act: 'Running' });
+    store.set('demo:state', { status: 'Running' });
     store.set('demo:agents', ['a1']);
 
     const { resetAllDemoState } = await import('@/lib/orchestrator/demo-state');
@@ -187,14 +186,13 @@ describe('KV Reset Logic', () => {
 
     // demo:state gets re-written with idle state, so it exists but is reset
     const state = store.get('demo:state') as DemoState;
-    expect(state.act).toBe(DemoAct.Idle);
     expect(state.status).toBe(DemoStatus.Idle);
   });
 
   it('sets demo:state to initial idle state after clearing', async () => {
     store.set('demo:state', {
-      act: DemoAct.Payoff,
       status: DemoStatus.Completed,
+      seededAt: 500,
       startedAt: 1000,
       completedAt: 2000,
     });
@@ -203,7 +201,6 @@ describe('KV Reset Logic', () => {
     await resetAllDemoState();
 
     const state = store.get('demo:state') as DemoState;
-    expect(state.act).toBe(DemoAct.Idle);
     expect(state.status).toBe(DemoStatus.Idle);
     expect(state.startedAt).toBeNull();
     expect(state.completedAt).toBeNull();

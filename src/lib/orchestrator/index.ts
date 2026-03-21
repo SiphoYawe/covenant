@@ -5,13 +5,13 @@ export { OrchestratorEngine } from './engine';
 export {
   getDemoState,
   setDemoState,
-  updateDemoAct,
+  updateDemoStatus,
   getDemoAgents,
   addDemoAgent,
   clearDemoAgents,
   resetAllDemoState,
 } from './demo-state';
-export { LifecycleStep, DemoAct, DemoStatus } from './types';
+export { LifecycleStep, DemoStatus } from './types';
 export { DEMO_KV_KEYS, KV_PREFIXES_TO_CLEAR } from './constants';
 export type {
   NegotiationStatus,

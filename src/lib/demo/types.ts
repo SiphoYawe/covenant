@@ -1,75 +1,32 @@
-import type { ApiError } from '@/types';
+/** Types for the seed-based demo platform and live triggers */
 
-/** Valid act numbers */
-export type ActNumber = 1 | 2 | 3 | 4 | 5;
+/** Available live trigger types */
+export type LiveTriggerType = 'lifecycle' | 'sybil-cascade';
 
-/** Status of a single act */
-export type ActStatus = 'pending' | 'running' | 'completed' | 'failed';
-
-/** Result of executing a single act */
-export type ActResult = {
-  act: ActNumber;
-  status: ActStatus;
-  duration: number;
-  events: string[];
-  data: Record<string, unknown>;
-  error?: ApiError;
+/** Seed platform status summary */
+export type SeedStatus = {
+  agentCount: number;
+  transactionCount: number;
+  usdcVolume: number;
+  lastSeeded: number | null;
 };
 
-/** Interface for act executors */
-export interface ActExecutor {
-  execute(actResults: Record<number, ActResult>): Promise<ActResult>;
-  canExecute(currentAct: number, actResults: Record<number, ActResult>): boolean;
-  actNumber: ActNumber;
-  name: string;
-  description: string;
-  expectedDuration: number;
-}
-
-/** Pricing and threshold configuration for the demo */
-export type ActConfig = {
-  agents: {
-    researcher: string;
-    reviewer: string;
-    summarizer: string;
-    malicious: string;
-  };
-  pricing: {
-    reviewJob: number;
-    summaryJob: number;
-    villainUndercut: number;
-    premiumJob: number;
-  };
-  thresholds: {
-    exclusion: number;
-    neutral: number;
-  };
+/** Result of executing a live trigger */
+export type LiveTriggerResult = {
+  type: LiveTriggerType;
+  success: boolean;
+  summary: string;
+  agents: string[];
+  amounts: number[];
+  txHashes: string[];
+  scoreChanges: Record<string, { before: number; after: number }>;
 };
 
-/** Default demo configuration */
-export const ACT_CONFIGS: ActConfig = {
-  agents: {
-    researcher: 'researcher',
-    reviewer: 'reviewer',
-    summarizer: 'summarizer',
-    malicious: 'malicious',
-  },
-  pricing: {
-    reviewJob: 10,
-    summaryJob: 5,
-    villainUndercut: 3,
-    premiumJob: 15,
-  },
-  thresholds: {
-    exclusion: 3.0,
-    neutral: 5.0,
-  },
+/** A single step event emitted during live trigger execution */
+export type LiveTriggerEvent = {
+  timestamp: number;
+  step: string;
+  protocol: string;
+  status: 'started' | 'completed' | 'failed';
+  data?: Record<string, unknown>;
 };
-
-/** Valid act numbers array for validation */
-export const VALID_ACT_NUMBERS: ActNumber[] = [1, 2, 3, 4, 5];
-
-/** Check if a number is a valid act number */
-export function isValidActNumber(n: number): n is ActNumber {
-  return VALID_ACT_NUMBERS.includes(n as ActNumber);
-}
