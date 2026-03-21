@@ -3,24 +3,6 @@ import type { AgentState, TrustEdge } from '@/stores/dashboard';
 import type { DemoEvent } from '@/lib/events';
 import { Protocol } from '@/lib/events';
 
-// --- Reputation score assignment ---
-// Providers: 6.5-9.5 based on pricing tier
-// Requesters: 7-9 (established market participants)
-// Adversarial: 0.5-3.5 (detected and penalized)
-
-const REPUTATION_SCORES: Record<string, number> = {
-  // Requesters
-  R1: 8.7, R2: 8.4, R3: 7.8, R4: 7.5, R5: 7.2, R6: 6.9, R7: 8.1,
-  // Providers (premium)
-  S1: 9.2, S2: 9.4, S8: 8.8, S9: 9.1, S14: 8.6, S16: 8.9,
-  // Providers (mid)
-  S4: 7.8, S5: 7.5, S7: 7.3, S11: 7.9, S13: 7.6, S15: 7.4,
-  // Providers (budget)
-  S3: 6.8, S6: 6.5, S10: 6.2, S12: 6.9, S17: 6.4,
-  // Adversarial
-  X1: 3.2, X2: 1.8, X3: 1.5, X4: 0.9,
-};
-
 export function seedAgentsToStoreAgents(
   profiles: SeedAgentProfile[],
 ): Record<string, AgentState> {
@@ -32,9 +14,6 @@ export function seedAgentsToStoreAgents(
       name: profile.name,
       role: profile.role,
       domain: profile.domain,
-      reputationScore: REPUTATION_SCORES[id] ?? 5,
-      trustLevel: profile.role === 'adversarial' ? 'malicious' : 'verified',
-      civicFlagged: profile.role === 'adversarial',
       lastUpdated: Date.now(),
       paymentVolume: 0,
     };

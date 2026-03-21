@@ -56,7 +56,7 @@ function StatusDot({ status }: { status: 'active' | 'flagged' | 'excluded' }) {
 function AgentCard({ agent }: { agent: AgentState }) {
   const edges = useEdges();
   const setSelected = useDashboardStore((s) => s.setSelectedAgent);
-  const score = agent.reputationScore ?? 5;
+  const score = agent.reputationScore ?? 0;
   const status = getStatusIndicator(agent.civicFlagged, agent.role);
   const domainColorClass = getDomainColor(agent.domain ?? '');
 
@@ -173,7 +173,7 @@ export default function AgentsPage() {
 
   const filteredAgents = useMemo(() => {
     const all = Object.values(agents).sort(
-      (a, b) => (b.reputationScore ?? 5) - (a.reputationScore ?? 5),
+      (a, b) => (b.reputationScore ?? 0) - (a.reputationScore ?? 0),
     );
     if (!searchQuery.trim()) return all;
     const q = searchQuery.toLowerCase();

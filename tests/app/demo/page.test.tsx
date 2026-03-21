@@ -95,14 +95,13 @@ describe('Demo Page', () => {
     expect(screen.getByText('Live: Detect Threat')).toBeDefined();
   });
 
-  it('renders seed status section', async () => {
+  it('renders live status section with store-derived values', async () => {
     const DemoPage = (await import('@/app/demo/page')).default;
     render(<DemoPage />);
 
     expect(screen.getAllByText('Agents').length).toBeGreaterThan(0);
-    expect(screen.getByText('28')).toBeDefined();
+    expect(screen.getByText('0')).toBeDefined(); // No agents in empty mock store
     expect(screen.getAllByText('Transactions').length).toBeGreaterThan(0);
-    expect(screen.getByText('210+')).toBeDefined();
   });
 
   it('renders re-seed button', async () => {

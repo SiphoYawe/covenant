@@ -98,12 +98,12 @@ export const act4Consequences: ActExecutor = {
             agentRole: 'agent',
             score,
             classification: score < 3 ? 'adversarial' : score < 5 ? 'suspicious' : score < 7 ? 'neutral' : 'trusted',
-            jobCount: 1,
-            successRate: score > 5 ? 1 : 0,
-            failureRate: score > 5 ? 0 : 1,
-            paymentVolume: 6,
+            jobCount: 0,
+            successRate: 0,
+            failureRate: 0,
+            paymentVolume: 0,
             civicFlags: [],
-            trustGraphPosition: { inboundTrust: score * 0.5, outboundTrust: score * 0.3 },
+            trustGraphPosition: { inboundTrust: 0, outboundTrust: 0 },
             sybilAlerts: [],
             stakeWeightedAverage: score,
           });
@@ -126,10 +126,10 @@ export const act4Consequences: ActExecutor = {
             timestamp: Date.now(),
             signalSummary: {
               stakeWeight: score,
-              trustPropagation: score * 0.8,
-              sybilPenalty: score < 3 ? 2 : 0,
-              civicFlag: score < 3 ? 1 : 0,
-              paymentVolume: 6,
+              trustPropagation: 0,
+              sybilPenalty: 0,
+              civicFlag: 0,
+              paymentVolume: 0,
             },
           });
           txHashes[agent.agentId] = result.txHash;

@@ -9,11 +9,11 @@ export function computeHealthScore(
   const successRate = total > 0 ? (total - (metrics.totalFeedback ?? 0)) / total : 0;
 
   const agentValues = Object.values(agents);
+  const scored = agentValues.filter((a) => a.reputationScore != null);
   const avgReputation =
-    agentValues.length > 0
-      ? agentValues.reduce((sum, a) => sum + (a.reputationScore ?? 5), 0) /
-        agentValues.length
-      : 5;
+    scored.length > 0
+      ? scored.reduce((sum, a) => sum + a.reputationScore!, 0) / scored.length
+      : 0;
 
   const score =
     successRate * 40 +

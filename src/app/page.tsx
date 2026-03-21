@@ -74,8 +74,9 @@ export default function Home() {
   }, [agentValues]);
 
   const avgReputation = useMemo(() => {
-    if (agentValues.length === 0) return 5;
-    return agentValues.reduce((sum, a) => sum + (a.reputationScore ?? 5), 0) / agentValues.length;
+    const scored = agentValues.filter((a) => a.reputationScore != null);
+    if (scored.length === 0) return 0;
+    return scored.reduce((sum, a) => sum + a.reputationScore!, 0) / scored.length;
   }, [agentValues]);
 
   const healthScore = useMemo(

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { useDemo, useLiveTrigger } from '@/hooks/use-demo';
-import { useEvents } from '@/stores/dashboard';
+import { useEvents, useAgents, useMetrics } from '@/stores/dashboard';
+import { formatUSDCCompact } from '@/components/dashboard/metrics-utils';
 import { LiveTriggerCard } from '@/components/demo/live-trigger-card';
 import { LiveEventStream } from '@/components/demo/live-event-stream';
 import { TriggerSummary } from '@/components/demo/trigger-summary';
@@ -31,7 +32,17 @@ export default function DemoPage() {
   const lifecycle = useLiveTrigger('lifecycle');
   const sybilCascade = useLiveTrigger('sybil-cascade');
   const allEvents = useEvents();
+  const agents = useAgents();
+  const metrics = useMetrics();
   const [resetArmed, setResetArmed] = useState(false);
+
+  const agentCount = useMemo(() => Object.keys(agents).length, [agents]);
+  const sybilRingMembers = useMemo(() => {
+    return Object.values(agents)
+      .filter((a) => a.civicFlagged)
+      .map((a) => a.agentId)
+      .join(', ');
+  }, [agents]);
 
   // Filter live trigger events from all events
   const liveEvents = allEvents.filter(
@@ -83,13 +94,13 @@ export default function DemoPage() {
           <p className="text-xs text-score-critical">{resetError}</p>
         )}
 
-        {/* Seed Status Bar */}
+        {/* Live Status Bar */}
         <div className="grid grid-cols-4 gap-3">
           {[
-            { label: 'Agents', value: '28', sub: 'registered' },
-            { label: 'Transactions', value: '210+', sub: 'completed' },
-            { label: 'USDC Volume', value: '$1,247', sub: 'settled' },
-            { label: 'Sybil Ring', value: 'X2-X3-X4', sub: 'detected' },
+            { label: 'Agents', value: String(agentCount), sub: 'registered' },
+            { label: 'Transactions', value: String(metrics.totalTransactions), sub: 'completed' },
+            { label: 'USDC Volume', value: `${formatUSDCCompact(metrics.totalPayments)}`, sub: 'settled' },
+            { label: 'Flagged', value: sybilRingMembers || 'None', sub: 'detected' },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-xl border border-border px-4 py-3">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>

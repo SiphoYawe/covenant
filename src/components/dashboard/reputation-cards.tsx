@@ -11,7 +11,7 @@ export function ReputationCards() {
 
   const sortedAgents = useMemo(() => {
     return Object.values(agents).sort(
-      (a, b) => (b.reputationScore ?? 5) - (a.reputationScore ?? 5),
+      (a, b) => (b.reputationScore ?? 0) - (a.reputationScore ?? 0),
     );
   }, [agents]);
 
@@ -56,7 +56,7 @@ export function ReputationCards() {
           agentId={agent.agentId}
           name={agent.name}
           role={agent.role}
-          score={agent.reputationScore ?? 5}
+          score={agent.reputationScore ?? 0}
           previousScore={null}
           paymentVolume={0}
           jobCount={0}

@@ -11,34 +11,10 @@ import {
 } from '@/stores/dashboard';
 import { Badge } from '@/components/ui/badge';
 import { getScoreColor, formatUSDC } from '@/components/dashboard/reputation-card';
-import { getDomainColor, truncateTxHash, baseScanTxUrl } from '@/components/dashboard/seed-data-adapter';
+import { getDomainColor } from '@/components/dashboard/seed-data-adapter';
 import { formatTimestamp, getProtocolConfig } from '@/components/dashboard/feed-utils';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { SecurityCheckIcon, CancelCircleIcon, LinkSquare01Icon } from '@hugeicons/core-free-icons';
-
-function ScoreBar({ label, value, max = 10 }: { label: string; value: number; max?: number }) {
-  const pct = Math.min(100, (value / max) * 100);
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-muted-foreground w-28 shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${
-            value / max >= 0.8
-              ? 'bg-score-excellent'
-              : value / max >= 0.4
-                ? 'bg-score-moderate'
-                : 'bg-score-critical'
-          }`}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </div>
-      <span className="text-xs text-foreground font-medium w-8 text-right">{value.toFixed(1)}</span>
-    </div>
-  );
-}
+import { SecurityCheckIcon, CancelCircleIcon } from '@hugeicons/core-free-icons';
 
 export function AgentDetail() {
   const selectedAgentId = useSelectedAgentId();
@@ -73,18 +49,6 @@ export function AgentDetail() {
     () => agentEvents.filter((e) => e.type === 'task.delivered' || e.type === 'payment:settled').length,
     [agentEvents],
   );
-
-  // Synthesize score breakdown from the overall score
-  const scoreBreakdown = useMemo(() => {
-    if (!agent) return null;
-    const score = agent.reputationScore ?? 5;
-    return {
-      stakeWeight: Math.min(10, score * 1.1),
-      trustPropagation: Math.min(10, score * 0.9 + (agentEdges.length > 3 ? 1 : 0)),
-      sybilScore: agent.civicFlagged ? 1.5 : Math.min(10, score + 1),
-      civicFlags: agent.civicFlagged ? 0 : 10,
-    };
-  }, [agent, agentEdges.length]);
 
   return (
     <AnimatePresence mode="wait">
@@ -131,31 +95,22 @@ export function AgentDetail() {
             <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
               Reputation Score
             </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <motion.span
-                key={agent.reputationScore}
-                initial={{ scale: 1.1 }}
-                animate={{ scale: 1 }}
-                className={`text-[28px] font-bold leading-tight ${getScoreColor(agent.reputationScore ?? 5)}`}
-              >
-                {(agent.reputationScore ?? 5).toFixed(1)}
-              </motion.span>
-              <span className="text-muted-foreground text-sm">/10</span>
-            </div>
+            {agent.reputationScore != null ? (
+              <div className="flex items-baseline gap-2 mt-1">
+                <motion.span
+                  key={agent.reputationScore}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  className={`text-[28px] font-bold leading-tight ${getScoreColor(agent.reputationScore)}`}
+                >
+                  {agent.reputationScore.toFixed(1)}
+                </motion.span>
+                <span className="text-muted-foreground text-sm">/10</span>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm mt-1">Pending computation</p>
+            )}
           </div>
-
-          {/* Score breakdown */}
-          {scoreBreakdown && (
-            <div className="space-y-2">
-              <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
-                Score Breakdown
-              </span>
-              <ScoreBar label="Stake Weight" value={scoreBreakdown.stakeWeight} />
-              <ScoreBar label="Trust Propagation" value={scoreBreakdown.trustPropagation} />
-              <ScoreBar label="Sybil Score" value={scoreBreakdown.sybilScore} />
-              <ScoreBar label="Civic Status" value={scoreBreakdown.civicFlags} />
-            </div>
-          )}
 
           {/* Civic status */}
           <div>
@@ -202,20 +157,11 @@ export function AgentDetail() {
                 {agentEdges.slice(0, 10).map((edge, i) => {
                   const counterparty = edge.source === selectedAgentId ? edge.target : edge.source;
                   const counterName = agents[counterparty]?.name || counterparty;
-                  const txHash = `0x${selectedAgentId.slice(2, 8)}${counterparty.slice(0, 6)}${String(i).padStart(4, '0')}`;
                   return (
                     <div key={`${edge.source}-${edge.target}-${i}`} className="flex items-center gap-2 text-xs">
-                      <span className="text-muted-foreground w-16 shrink-0">${edge.weight}</span>
+                      <span className="text-muted-foreground w-16 shrink-0">{edge.weight} USDC</span>
                       <span className="text-foreground truncate flex-1">{counterName}</span>
-                      <a
-                        href={baseScanTxUrl(txHash)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline shrink-0 flex items-center gap-1"
-                      >
-                        <HugeiconsIcon icon={LinkSquare01Icon} size={12} />
-                        {truncateTxHash(txHash)}
-                      </a>
+                      <span className="text-muted-foreground shrink-0 uppercase text-[9px]">{edge.protocol}</span>
                     </div>
                   );
                 })}

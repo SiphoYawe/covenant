@@ -64,7 +64,7 @@ export function buildGraphData(
   const nodes: GraphNode[] = Object.values(agents).map((a) => ({
     id: a.agentId,
     name: a.name || a.agentId.slice(0, 8),
-    score: a.reputationScore ?? 5,
+    score: a.reputationScore ?? 0,
     role: a.role,
   }));
 

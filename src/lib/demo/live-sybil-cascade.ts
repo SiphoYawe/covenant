@@ -71,24 +71,26 @@ export async function executeSybilCascade(
     const graph = await getGraph();
     const feedbackRecords: FeedbackRecord[] = [];
 
-    // Build feedback records for stake weighting
+    // Build feedback records from KV-cached payment proofs
     for (const agentId of ringAgentIds) {
       const cached = await kvGet<{ score: number }>(`agent:${agentId}:reputation`);
+      const paymentProof = await kvGet<{ txHash: string }>(`agent:${agentId}:latest-payment`);
+      const txHash = paymentProof?.txHash ?? '';
+
       feedbackRecords.push({
         agentId,
         feedbackValue: 1, // All ring members gave each other positive feedback
         paymentAmount: 2,
-        transactionHash: `sybil-evidence-${agentId}`,
+        transactionHash: txHash,
         timestamp: Date.now(),
       });
 
-      // Store before score
       const beforeScore = cached?.score ?? 5.0;
       feedbackRecords.push({
         agentId,
         feedbackValue: beforeScore > 5 ? 1 : -1,
         paymentAmount: 2,
-        transactionHash: `existing-${agentId}`,
+        transactionHash: txHash,
         timestamp: Date.now() - 1000,
       });
     }
@@ -168,14 +170,34 @@ export async function executeSybilCascade(
     let combinedExplanation = '';
     for (const agentId of ringAgentIds) {
       const scoreInfo = scoreDrops[agentId];
+      const stakeResult = stakeMap.get(agentId);
+      const trustScore = trustMap.get(agentId) ?? 0;
+      const civicPen = await getCivicPenalty(agentId);
+      const agentAlerts = sybilResult.alerts.filter(
+        (a: { involvedAgents: string[] }) => a.involvedAgents.includes(agentId),
+      );
+      const sybilPenalty = agentAlerts.length * -1;
+
       const classification = classifyAgent(
         {
           agentId,
           finalScore: scoreInfo.after,
-          components: { stakeWeightedScore: 3.0, trustPropagationScore: 2.5, sybilPenalty: -2, civicPenalty: 0 },
+          components: {
+            stakeWeightedScore: stakeResult?.weightedAverage ?? 0,
+            trustPropagationScore: trustScore,
+            sybilPenalty,
+            civicPenalty: civicPen,
+          },
           classification: 'adversarial',
         },
-        { agentId, stakeWeightedScore: 3.0, trustPropagationScore: 2.5, sybilAlerts: [], civicPenalty: 0, hasNegativeFeedback: false },
+        {
+          agentId,
+          stakeWeightedScore: stakeResult?.weightedAverage ?? 0,
+          trustPropagationScore: trustScore,
+          sybilAlerts: agentAlerts,
+          civicPenalty: civicPen,
+          hasNegativeFeedback: false,
+        },
       );
 
       const explanationInput: ExplanationInput = {
@@ -184,16 +206,16 @@ export async function executeSybilCascade(
         agentRole: 'provider',
         score: scoreInfo.after,
         classification: classification as ExplanationInput['classification'],
-        jobCount: 3,
-        successRate: 1.0,
-        failureRate: 0,
-        paymentVolume: 6,
+        jobCount: feedbackRecords.filter((r) => r.agentId === agentId).length,
+        successRate: scoreInfo.after > 5 ? 1.0 : 0,
+        failureRate: scoreInfo.after > 5 ? 0 : 1.0,
+        paymentVolume: feedbackRecords
+          .filter((r) => r.agentId === agentId)
+          .reduce((sum, r) => sum + r.paymentAmount, 0),
         civicFlags: [],
-        trustGraphPosition: { inboundTrust: 2.5, outboundTrust: 2.5 },
-        sybilAlerts: sybilResult.alerts.filter(
-          (a: { involvedAgents: string[] }) => a.involvedAgents.includes(agentId),
-        ),
-        stakeWeightedAverage: 3.0,
+        trustGraphPosition: { inboundTrust: trustScore, outboundTrust: trustScore },
+        sybilAlerts: agentAlerts,
+        stakeWeightedAverage: stakeResult?.weightedAverage ?? 0,
       };
 
       const explanationText = await generateExplanation(explanationInput);
@@ -210,15 +232,25 @@ export async function executeSybilCascade(
     const txHashes: Record<string, string> = {};
     for (const agentId of ringAgentIds) {
       const scoreInfo = scoreDrops[agentId];
+      const stakeResult = stakeMap.get(agentId);
+      const agentTrust = trustMap.get(agentId) ?? 0;
+      const agentCivicPenalty = await getCivicPenalty(agentId);
+      const agentSybilCount = sybilResult.alerts.filter(
+        (a: { involvedAgents: string[] }) => a.involvedAgents.includes(agentId),
+      ).length;
+      const agentPaymentVolume = feedbackRecords
+        .filter((r) => r.agentId === agentId)
+        .reduce((sum, r) => sum + r.paymentAmount, 0);
+
       const result = await appendReputationResponse({
         agentId,
         score: scoreInfo.after,
         signalSummary: {
-          stakeWeight: 3.0,
-          trustPropagation: 2.5,
-          sybilPenalty: sybilResult.alerts.length,
-          civicFlag: 0,
-          paymentVolume: 6,
+          stakeWeight: stakeResult?.weightedAverage ?? 0,
+          trustPropagation: agentTrust,
+          sybilPenalty: agentSybilCount,
+          civicFlag: agentCivicPenalty,
+          paymentVolume: agentPaymentVolume,
         },
         explanationCid: '',
         timestamp: Date.now(),

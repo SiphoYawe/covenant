@@ -29,10 +29,10 @@ describe('Seed Data Adapter', () => {
       expect(nexus!.role).toBe('requester');
     });
 
-    it('maps adversarial agents with civicFlagged', () => {
+    it('does not pre-flag any agents as civicFlagged', () => {
       const result = seedAgentsToStoreAgents(AGENT_ROSTER.all);
-      const adversarial = Object.values(result).filter((a) => a.civicFlagged);
-      expect(adversarial.length).toBe(4);
+      const flagged = Object.values(result).filter((a) => a.civicFlagged);
+      expect(flagged.length).toBe(0);
     });
 
     it('assigns domain from seed profile', () => {
@@ -41,19 +41,12 @@ describe('Seed Data Adapter', () => {
       expect(nexus!.domain).toBe('AI research');
     });
 
-    it('assigns realistic reputation scores based on role', () => {
+    it('does not assign pre-computed reputation scores', () => {
       const result = seedAgentsToStoreAgents(AGENT_ROSTER.all);
       const agents = Object.values(result);
-      // Providers should have scores
-      const providers = agents.filter((a) => a.role === 'provider');
-      providers.forEach((p) => {
-        expect(p.reputationScore).toBeGreaterThanOrEqual(0);
-        expect(p.reputationScore).toBeLessThanOrEqual(10);
-      });
-      // Adversarial should have low scores
-      const adversarial = agents.filter((a) => a.civicFlagged);
-      adversarial.forEach((a) => {
-        expect(a.reputationScore!).toBeLessThan(4);
+      // All agents should have undefined scores until the reputation engine computes them
+      agents.forEach((a) => {
+        expect(a.reputationScore).toBeUndefined();
       });
     });
   });

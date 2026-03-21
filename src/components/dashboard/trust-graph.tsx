@@ -81,7 +81,7 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
     (node: any, ctx: CanvasRenderingContext2D) => {
       const x = node.x ?? 0;
       const y = node.y ?? 0;
-      const score = node.score ?? 5;
+      const score = node.score ?? 0;
       const role = node.role ?? '';
       const radius = getNodeRadius(score);
       const color = getNodeColor(score, role);
@@ -152,7 +152,7 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
         height={dimensions.height}
         nodeId="id"
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        nodeVal={(node: any) => getNodeRadius(node.score ?? 5)}
+        nodeVal={(node: any) => getNodeRadius(node.score ?? 0)}
         nodeCanvasObject={nodeCanvasObject}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         linkWidth={(link: any) =>
