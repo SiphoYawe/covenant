@@ -59,3 +59,6 @@ docs/
 coverage/
 .env*.local
 tsconfig.tsbuildinfo
+
+# Seed data state (auto-generated, contains wallet progress)
+seed/state.json
