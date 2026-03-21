@@ -18,7 +18,7 @@ import {
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full text-foreground/50">
+    <div className="flex items-center justify-center h-full text-muted-foreground">
       Loading trust graph...
     </div>
   ),
@@ -78,9 +78,9 @@ export function TrustGraph() {
       if (isSelected) {
         ctx.beginPath();
         ctx.arc(x, y, radius + 3, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillStyle = 'rgba(0,187,255,0.3)';
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = '#00BBFF';
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -93,7 +93,7 @@ export function TrustGraph() {
       ctx.font = '4px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = '#e5e7eb';
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillText(node.name ?? '', x, y + radius + 2);
     },
     [selectedAgentId],

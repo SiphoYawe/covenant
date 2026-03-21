@@ -1,18 +1,19 @@
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
-  primary: 'bg-blue-600 hover:bg-blue-500 text-white',
-  secondary: 'bg-zinc-700 hover:bg-zinc-600 text-zinc-200',
-  ghost: 'bg-transparent hover:bg-zinc-800 text-zinc-400',
+  primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+  ghost: 'bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground',
+  destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
 };
 
 const SIZE_STYLES: Record<ButtonSize, string> = {
-  sm: 'px-2 py-1 text-xs',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
+  sm: 'text-xs px-3 py-1.5',
+  md: 'text-sm px-4 py-2',
+  lg: 'text-base px-6 py-3',
 };
 
 export type ButtonProps = {
@@ -32,7 +33,7 @@ export function Button({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors
+      className={`inline-flex items-center justify-center rounded-full font-medium transition-colors
         ${VARIANT_STYLES[variant]} ${SIZE_STYLES[size]}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}`}

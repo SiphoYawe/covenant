@@ -11,12 +11,12 @@ describe('Button', () => {
 
   it('applies primary variant styling by default', () => {
     const { container } = render(<Button>Primary</Button>);
-    expect(container.firstElementChild!.className).toContain('bg-blue-600');
+    expect(container.firstElementChild!.className).toContain('bg-primary');
   });
 
   it('applies secondary variant styling', () => {
     const { container } = render(<Button variant="secondary">Secondary</Button>);
-    expect(container.firstElementChild!.className).toContain('bg-zinc-700');
+    expect(container.firstElementChild!.className).toContain('bg-secondary');
   });
 
   it('applies ghost variant styling', () => {
@@ -26,7 +26,7 @@ describe('Button', () => {
 
   it('applies size classes', () => {
     const { container } = render(<Button size="sm">Small</Button>);
-    expect(container.firstElementChild!.className).toContain('px-2');
+    expect(container.firstElementChild!.className).toContain('px-3');
 
     const { container: lg } = render(<Button size="lg">Large</Button>);
     expect(lg.firstElementChild!.className).toContain('px-6');

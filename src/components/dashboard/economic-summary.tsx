@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { useAgents, useMetrics } from '@/stores/dashboard';
-import { Card } from '@/components/ui/card';
 import {
   computeHealthScore,
   formatUSDCCompact,
@@ -14,15 +13,19 @@ type MetricItemProps = {
   label: string;
   value: string;
   color?: string;
+  trend?: string;
 };
 
-function MetricItem({ label, value, color }: MetricItemProps) {
+function MetricItem({ label, value, color, trend }: MetricItemProps) {
   return (
-    <div className="flex flex-col items-center">
-      <span className={`text-2xl font-bold ${color ?? 'text-foreground'}`}>
+    <div className="flex-1 bg-card rounded-3xl border border-border p-5 flex flex-col">
+      <span className="text-muted-foreground text-[13px] font-medium">{label}</span>
+      <span className={`text-[28px] font-bold ${color ?? 'text-foreground'}`}>
         {value}
       </span>
-      <span className="text-xs text-zinc-500">{label}</span>
+      {trend && (
+        <span className="text-score-excellent text-[13px]">{trend}</span>
+      )}
     </div>
   );
 }
@@ -39,7 +42,7 @@ export function EconomicSummary() {
   );
 
   return (
-    <Card className="flex items-center justify-between gap-6">
+    <div className="flex flex-row gap-4">
       <MetricItem
         label="Total USDC"
         value={formatUSDCCompact(metrics.totalPayments)}
@@ -55,13 +58,13 @@ export function EconomicSummary() {
       <MetricItem
         label="Sybil Alerts"
         value={String(sybilAlerts)}
-        color={sybilAlerts > 0 ? 'text-red-400' : undefined}
+        color={sybilAlerts > 0 ? 'text-score-critical' : undefined}
       />
       <MetricItem
         label="Network Health"
         value={String(healthScore)}
         color={getHealthColor(healthScore)}
       />
-    </Card>
+    </div>
   );
 }

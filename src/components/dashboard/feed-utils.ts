@@ -10,20 +10,20 @@ export type ProtocolConfig = {
 };
 
 export const PROTOCOL_COLORS: Record<string, ProtocolConfig> = {
-  [Protocol.A2a]: { label: 'A2A', bg: 'bg-blue-600/20', text: 'text-blue-400' },
-  [Protocol.X402]: { label: 'x402', bg: 'bg-green-600/20', text: 'text-green-400' },
+  [Protocol.A2a]: { label: 'A2A', bg: 'bg-primary/20', text: 'text-primary' },
+  [Protocol.X402]: { label: 'x402', bg: 'bg-score-excellent/20', text: 'text-score-excellent' },
   [Protocol.Mcp]: { label: 'MCP', bg: 'bg-purple-600/20', text: 'text-purple-400' },
-  [Protocol.Erc8004]: { label: 'ERC-8004', bg: 'bg-orange-600/20', text: 'text-orange-400' },
-  [Protocol.Civic]: { label: 'Civic', bg: 'bg-red-600/20', text: 'text-red-400' },
-  [Protocol.CovenantAi]: { label: 'Covenant AI', bg: 'bg-amber-600/20', text: 'text-amber-400' },
+  [Protocol.Erc8004]: { label: 'ERC-8004', bg: 'bg-score-moderate/20', text: 'text-score-moderate' },
+  [Protocol.Civic]: { label: 'Civic', bg: 'bg-error/20', text: 'text-error-foreground' },
+  [Protocol.CovenantAi]: { label: 'Covenant AI', bg: 'bg-warning/20', text: 'text-warning-foreground' },
 };
 
 export function getProtocolConfig(protocol: string): ProtocolConfig {
   return (
     PROTOCOL_COLORS[protocol] ?? {
       label: protocol,
-      bg: 'bg-zinc-700',
-      text: 'text-zinc-300',
+      bg: 'bg-secondary',
+      text: 'text-muted-foreground',
     }
   );
 }

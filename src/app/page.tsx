@@ -1,79 +1,134 @@
 'use client';
 
-import Image from 'next/image';
-import { EconomicSummary } from '@/components/dashboard/economic-summary';
+import { useMemo } from 'react';
+import { AppLayout } from '@/components/layout/app-layout';
 import { TrustGraph } from '@/components/dashboard/trust-graph';
-import { ReputationCards } from '@/components/dashboard/reputation-cards';
-import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { AgentDetail } from '@/components/dashboard/agent-detail';
 import { useEvents } from '@/hooks/use-events';
+import { useAgents, useMetrics } from '@/stores/dashboard';
+import {
+  computeHealthScore,
+  formatUSDCCompact,
+  countSybilAlerts,
+} from '@/components/dashboard/metrics-utils';
+
+type MetricCardProps = {
+  label: string;
+  value: string;
+  trend?: string;
+  trendColor?: string;
+};
+
+function MetricCard({ label, value, trend, trendColor }: MetricCardProps) {
+  return (
+    <div className="flex-1 bg-card rounded-3xl border border-border p-5">
+      <span className="text-muted-foreground text-[13px] font-medium">{label}</span>
+      <div className="flex items-baseline gap-2 mt-1">
+        <span className="text-foreground text-[28px] font-bold leading-tight">{value}</span>
+        {trend && (
+          <span className={`text-[13px] ${trendColor ?? 'text-score-excellent'}`}>{trend}</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const { status } = useEvents();
+  const metrics = useMetrics();
+  const agents = useAgents();
+
+  const agentValues = useMemo(() => Object.values(agents), [agents]);
+  const sybilAlerts = useMemo(() => countSybilAlerts(agents), [agents]);
+
+  const avgReputation = useMemo(() => {
+    if (agentValues.length === 0) return 5;
+    return agentValues.reduce((sum, a) => sum + (a.reputationScore ?? 5), 0) / agentValues.length;
+  }, [agentValues]);
+
+  const healthScore = useMemo(
+    () => computeHealthScore(metrics, agents, sybilAlerts),
+    [metrics, agents, sybilAlerts],
+  );
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/covenant-logo-light-text.svg"
-            alt="Covenant"
-            width={160}
-            height={36}
-            priority
-          />
-          <span className="text-xs text-muted-foreground">AI Economic Reputation Layer</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <a href="/demo" className="text-xs px-3 py-1.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors">
-            Run Demo
-          </a>
+    <AppLayout>
+      <div className="flex flex-col gap-6 p-8 h-full">
+        {/* Header row */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold text-foreground">AI Reputation Dashboard</h1>
           <div className="flex items-center gap-2">
-            <span className={`inline-block w-2 h-2 rounded-full ${
-              status === 'connected' ? 'bg-score-excellent' :
-              status === 'connecting' ? 'bg-score-moderate animate-pulse' :
-              'bg-score-critical'
-            }`} />
-            <span className="text-xs text-muted-foreground">Base Sepolia</span>
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${
+                status === 'connected'
+                  ? 'bg-score-excellent'
+                  : status === 'connecting'
+                    ? 'bg-score-moderate animate-pulse'
+                    : 'bg-score-critical'
+              }`}
+            />
+            <span className="text-muted-foreground text-sm">
+              {status === 'connected'
+                ? 'Connected'
+                : status === 'connecting'
+                  ? 'Connecting'
+                  : 'Disconnected'}
+            </span>
           </div>
         </div>
-      </header>
 
-      {/* Economic Summary Bar */}
-      <div className="px-6 py-3 border-b border-border">
-        <EconomicSummary />
-      </div>
+        {/* Metrics row */}
+        <div className="flex gap-4">
+          <MetricCard
+            label="Total Payments"
+            value={formatUSDCCompact(metrics.totalPayments)}
+            trend={metrics.totalPayments > 0 ? '+' + formatUSDCCompact(metrics.totalPayments) : undefined}
+            trendColor="text-score-excellent"
+          />
+          <MetricCard
+            label="Transactions"
+            value={String(metrics.totalTransactions)}
+            trend={metrics.totalTransactions > 0 ? `+${metrics.totalTransactions}` : undefined}
+            trendColor="text-score-excellent"
+          />
+          <MetricCard
+            label="Avg Reputation"
+            value={avgReputation.toFixed(1)}
+            trend={`${healthScore}% health`}
+            trendColor={healthScore >= 80 ? 'text-score-excellent' : healthScore >= 50 ? 'text-score-moderate' : 'text-score-critical'}
+          />
+          <MetricCard
+            label="Active Agents"
+            value={String(agentValues.length)}
+            trend={sybilAlerts > 0 ? `${sybilAlerts} flagged` : undefined}
+            trendColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
+          />
+        </div>
 
-      {/* Main Content */}
-      <div className="flex flex-1 min-h-0">
-        {/* Left Sidebar: Agent Cards */}
-        <aside className="w-80 border-r border-border p-4 overflow-y-auto">
-          <h2 className="text-sm font-medium text-muted-foreground mb-3">Agents</h2>
-          <ReputationCards />
-        </aside>
-
-        {/* Center: Trust Graph */}
-        <main className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 min-h-0">
-            <TrustGraph />
-          </div>
-
-          {/* Bottom: Activity Feed */}
-          <div className="h-48 border-t border-border p-4">
-            <h2 className="text-sm font-medium text-muted-foreground mb-2">Activity</h2>
-            <div className="h-[calc(100%-28px)]">
-              <ActivityFeed />
+        {/* Content area */}
+        <div className="flex gap-6 flex-1 min-h-0">
+          {/* Trust Graph panel */}
+          <div className="flex-1 bg-card rounded-3xl border border-border flex flex-col overflow-hidden">
+            <div className="p-4 flex justify-between items-center border-b border-border">
+              <h2 className="text-base font-semibold text-foreground">Trust Graph</h2>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground text-sm px-3 py-1 rounded-full transition-colors"
+              >
+                Filter
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <TrustGraph />
             </div>
           </div>
-        </main>
 
-        {/* Right Sidebar: Agent Detail */}
-        <aside className="w-80 border-l border-border p-4">
-          <h2 className="text-sm font-medium text-muted-foreground mb-3">Details</h2>
-          <AgentDetail />
-        </aside>
+          {/* Agent Detail panel */}
+          <div className="w-80 shrink-0">
+            <AgentDetail />
+          </div>
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }

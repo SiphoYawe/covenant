@@ -58,3 +58,4 @@ docs/
 # Testing
 coverage/
 .env*.local
+tsconfig.tsbuildinfo

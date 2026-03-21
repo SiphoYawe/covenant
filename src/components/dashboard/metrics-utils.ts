@@ -31,9 +31,9 @@ export function formatUSDCCompact(amount: number): string {
 }
 
 export function getHealthColor(score: number): string {
-  if (score >= 80) return 'text-green-400';
-  if (score >= 50) return 'text-yellow-400';
-  return 'text-red-400';
+  if (score >= 80) return 'text-score-excellent';
+  if (score >= 50) return 'text-score-moderate';
+  return 'text-score-critical';
 }
 
 export function countSybilAlerts(agents: Record<string, AgentState>): number {

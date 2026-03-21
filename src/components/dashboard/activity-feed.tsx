@@ -33,7 +33,7 @@ export function ActivityFeed() {
 
   if (events.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-zinc-500 text-sm">
+      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
         Waiting for agent activity...
       </div>
     );
@@ -43,7 +43,7 @@ export function ActivityFeed() {
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="overflow-y-auto h-full space-y-1"
+      className="overflow-y-auto h-full"
     >
       {events.map((event, idx) => {
         const isCivic = isCivicFlagEvent(event);
@@ -52,15 +52,15 @@ export function ActivityFeed() {
         return (
           <div
             key={event.id}
-            className={`flex items-start gap-3 p-2 rounded text-sm transition-all ${
+            className={`flex items-start gap-3 py-3 px-4 border-b border-border text-sm transition-all ${
               idx === 0 ? 'animate-fade-in' : ''
             } ${
               isCivic
-                ? 'bg-red-950/30 border-l-4 border-red-500'
-                : 'hover:bg-zinc-800/50'
+                ? 'bg-error/10 border-l-2 border-error text-error-foreground'
+                : 'hover:bg-muted'
             }`}
           >
-            <span className="text-xs text-zinc-500 whitespace-nowrap min-w-[60px]">
+            <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[60px]">
               {formatTimestamp(event.timestamp)}
             </span>
 
@@ -70,7 +70,7 @@ export function ActivityFeed() {
               {proto.label}
             </span>
 
-            <span className="text-zinc-300 flex-1">
+            <span className="text-foreground/80 flex-1">
               {formatEventDescription(event)}
             </span>
           </div>

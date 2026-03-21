@@ -13,7 +13,7 @@ export type LoadingProps = {
 export function Loading({ size = 'md' }: LoadingProps) {
   return (
     <div
-      className={`${SIZE_CLASSES[size]} animate-spin rounded-full border-2 border-zinc-600 border-t-blue-400`}
+      className={`${SIZE_CLASSES[size]} animate-spin rounded-full border-2 border-border border-t-primary`}
       role="status"
       aria-label="Loading"
     />

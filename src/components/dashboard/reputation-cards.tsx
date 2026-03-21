@@ -25,7 +25,7 @@ export function ReputationCards() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-32 rounded-lg bg-zinc-800/50 animate-pulse"
+            className="h-32 rounded-3xl bg-muted animate-pulse"
           />
         ))}
       </div>
@@ -34,7 +34,7 @@ export function ReputationCards() {
 
   if (error) {
     return (
-      <div className="p-4 rounded-lg border border-red-700 bg-red-900/20 text-red-400 text-sm">
+      <div className="p-4 rounded-3xl border border-error bg-error/10 text-error-foreground text-sm">
         {error}
       </div>
     );
@@ -42,7 +42,7 @@ export function ReputationCards() {
 
   if (sortedAgents.length === 0) {
     return (
-      <div className="p-4 text-zinc-500 text-sm text-center">
+      <div className="p-4 text-muted-foreground text-sm text-center">
         No agents registered yet.
       </div>
     );
