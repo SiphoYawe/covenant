@@ -25,7 +25,6 @@ import { createWalletClient, createPublicClient, http, parseUnits } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
 import { USDC_CONTRACT_ADDRESS, ERC20_ABI, envKeyForWallet } from './types';
-import { inspectIdentityMetadata } from '@/lib/civic/identity-inspector';
 import { getCivicGateway } from '@/lib/civic/gateway';
 import { handleThreat, getFlags } from '@/lib/civic/threat-handler';
 import { getCivicPenalty } from '@/lib/civic/reputation-bridge';
@@ -222,13 +221,13 @@ export class SeedEngine {
     const txHash = mined.receipt.transactionHash ?? txHandle.hash;
     const agentId = sdkAgent.agentId?.toString() ?? `seed-${agent.walletName}`;
 
-    // Civic Layer 1 identity inspection (best-effort)
+    // Civic Layer 1 identity inspection via gateway (emits civic:identity-checked events)
     try {
-      await inspectIdentityMetadata(agentId, {
+      const gateway = getCivicGateway();
+      await gateway.inspectIdentity(agentId, {
         name: metadata.name,
         description: metadata.description,
         capabilities: metadata.capabilities,
-        walletAddress: '0x0000000000000000000000000000000000000000' as `0x${string}`,
       });
     } catch {
       console.log(`    [warn] Civic L1 inspection failed for ${agent.name}`);

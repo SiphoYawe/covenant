@@ -7,7 +7,7 @@ import { TrustGraph } from '@/components/dashboard/trust-graph';
 import { AgentDetail } from '@/components/dashboard/agent-detail';
 import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { useEvents } from '@/hooks/use-events';
-import { useAgents, useMetrics, useEdges, useDashboardStore } from '@/stores/dashboard';
+import { useAgents, useMetrics, useDashboardStore } from '@/stores/dashboard';
 import {
   computeHealthScore,
   formatUSDCCompact,
@@ -18,6 +18,7 @@ import {
   DashboardSquare01Icon,
   ChartRelationshipIcon,
   SecurityCheckIcon,
+  Shield01Icon,
 } from '@hugeicons/core-free-icons';
 
 type MetricCardProps = {
@@ -56,15 +57,10 @@ export default function Home() {
   const { status } = useEvents();
   const metrics = useMetrics();
   const agents = useAgents();
-  const edges = useEdges();
   const [showFeed, setShowFeed] = useState(true);
 
   const agentValues = useMemo(() => Object.values(agents), [agents]);
   const sybilAlerts = useMemo(() => countSybilAlerts(agents), [agents]);
-  const domains = useMemo(() => {
-    const set = new Set(agentValues.map((a) => a.domain).filter(Boolean));
-    return set.size;
-  }, [agentValues]);
 
   const avgReputation = useMemo(() => {
     const scored = agentValues.filter((a) => a.reputationScore != null);
@@ -135,11 +131,13 @@ export default function Home() {
             trend={healthScore > 0 ? `${healthScore}% health` : undefined}
             trendColor={healthScore >= 80 ? 'text-score-excellent' : healthScore >= 50 ? 'text-score-moderate' : 'text-score-critical'}
           />
-<MetricCard
-            label="Domains"
-            value={domains}
-            icon={DashboardSquare01Icon}
-            iconColor="text-score-moderate"
+          <MetricCard
+            label="Civic Flags"
+            value={sybilAlerts}
+            icon={Shield01Icon}
+            iconColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
+            trend={sybilAlerts > 0 ? 'agents flagged' : 'all clear'}
+            trendColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
           />
         </div>
 

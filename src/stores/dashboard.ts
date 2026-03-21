@@ -273,10 +273,19 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
       const res = await fetch('/api/dashboard');
       if (!res.ok) return;
       const data = await res.json();
+      // Merge civic events with any existing SSE events (dedup by id)
+      const existingIds = new Set(get().events.map(e => e.id));
+      const newEvents = (data.civicEvents ?? []).filter(
+        (e: DemoEvent) => !existingIds.has(e.id),
+      );
+      const allEvents = [...newEvents, ...get().events]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, EVENTS_CAP);
       set({
         agents: data.agents ?? {},
         edges: data.edges ?? [],
         metrics: data.metrics ?? initialState.metrics,
+        events: allEvents,
       });
     } catch {
       // API failed, dashboard stays empty until SSE populates

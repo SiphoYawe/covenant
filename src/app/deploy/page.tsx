@@ -1,13 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { DeployForm } from '@/components/deploy/deploy-form';
 import { DeploymentStatus } from '@/components/deploy/deployment-status';
-
-const UserButton = dynamic(
-  () => import('@civic/auth-web3/react').then((m) => ({ default: m.UserButton })),
-  { ssr: false },
-);
 
 export default function DeployPage() {
   return (
@@ -15,7 +9,6 @@ export default function DeployPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Deploy Agent</h1>
-        <UserButton />
       </div>
 
       {/* Content */}

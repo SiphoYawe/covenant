@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { HugeiconsIcon } from '@hugeicons/react';
 import type { IconSvgElement } from '@hugeicons/react';
 import {
@@ -14,6 +15,11 @@ import {
   Shield01Icon,
   RocketIcon,
 } from '@hugeicons/core-free-icons';
+
+const UserButton = dynamic(
+  () => import('@civic/auth-web3/react').then((m) => ({ default: m.UserButton })),
+  { ssr: false },
+);
 
 interface NavItem {
   label: string;
@@ -116,9 +122,9 @@ export function Sidebar() {
         />
       </div>
 
-      {/* Footer */}
+      {/* User Auth */}
       <div className="px-4 py-3 border-t border-sidebar-border">
-        <span className="text-xs text-muted-foreground/50">Covenant v1.0</span>
+        <UserButton />
       </div>
     </aside>
   );

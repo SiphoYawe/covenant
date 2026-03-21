@@ -44,6 +44,16 @@ export async function GET() {
   // Map: "source-target" -> real 0x txHash from feedback events
   const txHashMap = new Map<string, string>();
 
+  // Civic event types to surface to the frontend
+  const civicEventTypes = [
+    'civic:identity-checked',
+    'civic:behavioral-checked',
+    'civic:flagged',
+    'civic:tool-blocked',
+    'civic:resolved',
+  ];
+  const civicEvents: typeof allEvents = [];
+
   for (const event of allEvents) {
     if (event.type === 'seed:registration' && event.agentId) {
       // Only keep registrations for the 28 real agents (2522-2549)
@@ -58,6 +68,9 @@ export async function GET() {
     }
     if (event.type === 'civic:flagged' && event.agentId) {
       civicFlagged.add(event.agentId);
+    }
+    if (civicEventTypes.includes(event.type)) {
+      civicEvents.push(event);
     }
     if (event.type === 'feedback:submitted') {
       totalFeedback++;
@@ -144,6 +157,7 @@ export async function GET() {
       averagePayment: totalTransactions > 0 ? totalPayments / totalTransactions : 0,
       totalFeedback,
     },
+    civicEvents,
     eventCount: allEvents.length,
   });
 }
