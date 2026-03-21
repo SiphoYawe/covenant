@@ -38,6 +38,7 @@ export const EVENT_TYPES = {
   LIVE_TRIGGER_STEP: 'live:trigger-step',
   LIVE_TRIGGER_COMPLETED: 'live:trigger-completed',
   LIVE_TRIGGER_FAILED: 'live:trigger-failed',
+  AGENT_DEPLOYED: 'agent:deployed',
 } as const;
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];

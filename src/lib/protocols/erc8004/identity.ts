@@ -78,6 +78,66 @@ export async function registerAgent(
 }
 
 /**
+ * Register an agent dynamically on the ERC-8004 IdentityRegistry.
+ * Unlike registerAgent(role), accepts arbitrary config instead of role-based lookup.
+ * Used by the unified deploy API for provisioned and BYOW modes.
+ */
+export async function registerAgentDynamic(config: {
+  name: string;
+  description: string;
+  capabilities: string[];
+  privateKey: string;
+  address: string;
+}): Promise<{ agentId: string; txHash: string; address: string }> {
+  const sdk = getSDK(config.privateKey);
+
+  const agent = sdk.createAgent(config.name, config.description);
+  const txHandle = await agent.registerOnChain();
+  const mined = await txHandle.waitMined();
+
+  const agentId = agent.agentId;
+  if (!agentId) {
+    throw new Error(`Registration succeeded but no agent ID returned for: ${config.name}`);
+  }
+
+  const txHash = mined.receipt.transactionHash ?? txHandle.hash;
+
+  // Cache agent profile in KV
+  const profile: AgentProfile = {
+    agentId: agentId.toString(),
+    role: 'dynamic',
+    address: config.address as `0x${string}`,
+    metadataURI: agent.agentURI ?? '',
+    registrationTxHash: txHash as `0x${string}`,
+    registeredAt: Date.now(),
+  };
+
+  await kvSet(`agent:${agentId}:profile`, profile);
+  await kvLpush('deployed:agents', agentId.toString());
+
+  // Emit event
+  const eventBus = createEventBus();
+  await eventBus.emit({
+    type: EVENT_TYPES.AGENT_REGISTERED,
+    protocol: Protocol.Erc8004,
+    agentId: agentId.toString(),
+    data: {
+      name: config.name,
+      capabilities: config.capabilities,
+      address: config.address,
+      txHash,
+      metadataURI: profile.metadataURI,
+    },
+  });
+
+  return {
+    agentId: agentId.toString(),
+    txHash,
+    address: config.address,
+  };
+}
+
+/**
  * Get an agent profile by ID (cache-first, then on-chain).
  */
 export async function getAgent(agentId: string): Promise<AgentProfile | null> {

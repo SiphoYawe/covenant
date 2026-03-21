@@ -85,6 +85,27 @@ export function generateAgentCard(
   };
 }
 
+/** Generate an A2A Agent Card from dynamic config (not role-based) */
+export function generateDynamicAgentCard(config: {
+  name: string;
+  description: string;
+  capabilities: string[];
+  agentId?: string;
+  address?: string;
+}): AgentCard {
+  const skills: Skill[] = config.capabilities
+    .map((cap) => SKILL_DEFINITIONS[cap])
+    .filter((s): s is Skill => s !== undefined);
+
+  return {
+    name: config.name,
+    description: config.description,
+    url: `${BASE_URL}/api/agents/${config.agentId ?? 'unknown'}/a2a`,
+    skills,
+    erc8004AgentId: config.agentId,
+  };
+}
+
 /** Get an enriched Agent Card with reputation data from KV */
 export async function getAgentCard(role: DemoAgentRole): Promise<AgentCard> {
   const card = generateAgentCard(role);

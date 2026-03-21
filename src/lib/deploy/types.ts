@@ -45,6 +45,16 @@ export const DeployRequestSchema = z.discriminatedUnion('mode', [
   HumanDeployRequestSchema,
 ]);
 
+// --- BYOW Verify Schema (step 2) ---
+
+export const BYOWVerifyRequestSchema = z.object({
+  address: HexAddressSchema,
+  nonce: z.string().regex(/^[0-9a-f]{64}$/),
+  signature: z.string().regex(/^0x[0-9a-fA-F]+$/),
+});
+
+export type BYOWVerifyRequest = z.infer<typeof BYOWVerifyRequestSchema>;
+
 // --- Inferred types ---
 
 export type ProvisionedDeployRequest = z.infer<typeof ProvisionedDeployRequestSchema>;
