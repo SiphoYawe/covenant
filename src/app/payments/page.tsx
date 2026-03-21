@@ -100,15 +100,11 @@ export default function PaymentsPage() {
     [filteredTransactions, paymentsPage],
   );
 
-  // Compute success rate from real metrics
+  // Compute success rate from actual transactions
   const successRate = useMemo(() => {
-    if (metrics.totalTransactions === 0) return 0;
-    const failed = metrics.totalFeedback;
-    return Math.max(
-      0,
-      ((metrics.totalTransactions - failed) / metrics.totalTransactions) * 100,
-    );
-  }, [metrics.totalTransactions, metrics.totalFeedback]);
+    if (allTransactions.length === 0) return 0;
+    return 100; // All settled payments are successful by definition
+  }, [allTransactions.length]);
 
   // Reset to page 1 when filters change
   const handleAgentFilter = (value: string) => {

@@ -147,6 +147,7 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
   return (
     <div ref={containerRef} className="w-full h-full min-h-[300px]">
       <ForceGraph2D
+        key={graphData.nodes.length}
         graphData={graphData}
         width={dimensions.width}
         height={dimensions.height}

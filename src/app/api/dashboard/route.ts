@@ -1,133 +1,133 @@
+import { kv } from '@/lib/storage/kv';
 import { createEventBus } from '@/lib/events';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-type AgentState = {
+type GraphNode = {
+  id: string;
   agentId: string;
-  name: string;
   role: string;
-  domain?: string;
-  reputationScore?: number;
-  trustLevel?: string;
-  civicFlagged?: boolean;
-  lastUpdated: number;
-  paymentVolume?: number;
+  label: string;
 };
 
-type TrustEdge = {
+type GraphEdge = {
+  id: string;
   source: string;
   target: string;
-  weight: number;
-  protocol: string;
-  txHash?: string;
+  amount: string;
+  txHash: string;
+  outcome: string;
+  timestamp: number;
 };
 
 export async function GET() {
-  const bus = createEventBus();
+  // Primary data sources: graph:nodes and graph:edges from KV
+  // These contain deduplicated, real on-chain data
+  const [graphNodes, graphEdges] = await Promise.all([
+    kv.get<GraphNode[]>('graph:nodes'),
+    kv.get<GraphEdge[]>('graph:edges'),
+  ]);
 
-  // Fetch ALL events from KV
+  const nodes = graphNodes ?? [];
+  const edges = graphEdges ?? [];
+
+  // Build agent name map from seed:registration events
+  const bus = createEventBus();
   const allEvents = await bus.since(0);
 
-  const agents: Record<string, AgentState> = {};
-  const edgeMap = new Map<string, TrustEdge>();
-  let totalPayments = 0;
-  let totalTransactions = 0;
+  // Map: agentId -> { name, role, walletName }
+  // Use the LATEST registration for each agentId (from token range 2522-2549)
+  const nameMap = new Map<string, { name: string; role: string; walletName: string }>();
+  const civicFlagged = new Set<string>();
   let totalFeedback = 0;
-  const civicInspections: typeof allEvents = [];
 
   for (const event of allEvents) {
-    const data = event.data;
-
-    switch (event.type) {
-      case 'seed:registration':
-        if (event.agentId) {
-          agents[event.agentId] = {
-            ...agents[event.agentId],
-            agentId: event.agentId,
-            name: (data.name as string) || '',
-            role: (data.role as string) || '',
-            lastUpdated: event.timestamp,
-          };
-        }
-        break;
-
-      case 'agent:registered':
-        if (event.agentId) {
-          agents[event.agentId] = {
-            ...agents[event.agentId],
-            agentId: event.agentId,
-            name: (data.name as string) || '',
-            role: (data.role as string) || '',
-            lastUpdated: event.timestamp,
-          };
-        }
-        break;
-
-      case 'task:negotiated':
-        if (event.agentId && event.targetAgentId) {
-          const key = `${event.agentId}-${event.targetAgentId}`;
-          const existing = edgeMap.get(key);
-          const weight = (data.currentOffer as number) || (data.price as number) || 1;
-          edgeMap.set(key, {
-            source: event.agentId,
-            target: event.targetAgentId,
-            weight: existing ? existing.weight + weight : weight,
-            protocol: event.protocol,
-            txHash: (data.txHash as string) || existing?.txHash,
-          });
-        }
-        break;
-
-      case 'seed:interaction': {
-        const usdcAmount = (data.usdcAmount as number) || 0;
-        if (usdcAmount > 0) {
-          totalPayments += usdcAmount;
-          totalTransactions += 1;
-        }
-        break;
+    if (event.type === 'seed:registration' && event.agentId) {
+      // Only keep registrations for the 28 real agents (2522-2549)
+      const tokenId = parseInt(event.agentId.split(':')[1] ?? '0');
+      if (tokenId >= 2522 && tokenId <= 2549) {
+        nameMap.set(event.agentId, {
+          name: (event.data.name as string) || '',
+          role: (event.data.role as string) || '',
+          walletName: (event.data.walletName as string) || '',
+        });
       }
-
-      case 'payment:settled': {
-        const amount = (data.amount as number) || 0;
-        totalPayments += amount;
-        totalTransactions += 1;
-        break;
-      }
-
-      case 'feedback:submitted':
-        totalFeedback += 1;
-        break;
-
-      case 'reputation:updated':
-        if (event.agentId && agents[event.agentId]) {
-          agents[event.agentId].reputationScore = data.reputationScore as number;
-          agents[event.agentId].trustLevel = data.trustLevel as string;
-        }
-        break;
-
-      case 'civic:flagged':
-        if (event.agentId && agents[event.agentId]) {
-          agents[event.agentId].civicFlagged = true;
-        }
-        civicInspections.push(event);
-        break;
-
-      case 'civic:identity-checked':
-      case 'civic:behavioral-checked':
-      case 'civic:tool-blocked':
-      case 'civic:resolved':
-        civicInspections.push(event);
-        break;
+    }
+    if (event.type === 'civic:flagged' && event.agentId) {
+      civicFlagged.add(event.agentId);
+    }
+    if (event.type === 'feedback:submitted') {
+      totalFeedback++;
     }
   }
 
-  // Deduplicate edges: keep only unique source-target pairs
-  const edges = Array.from(edgeMap.values());
+  // Build agents from graph nodes enriched with names
+  const agents: Record<string, {
+    agentId: string;
+    name: string;
+    role: string;
+    domain?: string;
+    reputationScore?: number;
+    civicFlagged?: boolean;
+    lastUpdated: number;
+    paymentVolume?: number;
+  }> = {};
+
+  for (const node of nodes) {
+    const info = nameMap.get(node.agentId);
+    // Compute payment volume from edges
+    let volume = 0;
+    for (const edge of edges) {
+      if (edge.source === node.agentId || edge.target === node.agentId) {
+        volume += parseFloat(edge.amount) || 0;
+      }
+    }
+
+    // Determine role/domain from walletName prefix
+    const walletName = info?.walletName ?? '';
+    let role = info?.role ?? '';
+    let domain = '';
+    if (walletName.startsWith('R')) { role = role || 'requester'; domain = 'research'; }
+    else if (walletName.startsWith('S')) { role = role || 'provider'; domain = 'services'; }
+    else if (walletName.startsWith('X')) { role = role || 'adversarial'; domain = 'adversarial'; }
+
+    // Compute a reputation score from payment outcomes
+    const agentEdges = edges.filter(e => e.source === node.agentId || e.target === node.agentId);
+    const successEdges = agentEdges.filter(e => e.outcome === 'success');
+    const reputationScore = agentEdges.length > 0
+      ? (successEdges.length / agentEdges.length) * 10
+      : 5.0; // default for agents with no transactions
+
+    agents[node.agentId] = {
+      agentId: node.agentId,
+      name: info?.name ?? node.label,
+      role,
+      domain,
+      reputationScore: Math.round(reputationScore * 10) / 10,
+      civicFlagged: civicFlagged.has(node.agentId),
+      lastUpdated: Date.now(),
+      paymentVolume: volume,
+    };
+  }
+
+  // Build trust edges from graph edges
+  const trustEdges = edges.map(edge => ({
+    source: edge.source,
+    target: edge.target,
+    weight: parseFloat(edge.amount) || 1,
+    protocol: 'a2a',
+    txHash: edge.txHash,
+  }));
+
+  // Compute metrics from real edge data
+  const successfulEdges = edges.filter(e => e.outcome === 'success');
+  const totalPayments = successfulEdges.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const totalTransactions = edges.length;
 
   return NextResponse.json({
     agents,
-    edges,
+    edges: trustEdges,
     metrics: {
       totalPayments,
       totalTransactions,

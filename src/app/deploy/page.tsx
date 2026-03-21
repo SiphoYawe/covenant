@@ -14,7 +14,7 @@ export default function DeployPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-2xl space-y-8">
+      <div className="max-w-2xl mx-auto w-full space-y-8">
         <DeployForm />
         <DeploymentStatus />
       </div>
