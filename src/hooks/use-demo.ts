@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useDashboardStore } from '@/stores/dashboard';
 
 type DemoResetResult = {
@@ -59,14 +59,17 @@ export function useLiveTrigger(type: LiveTriggerType) {
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const events = useDashboardStore((s) =>
-    s.events.filter(
-      (e) =>
-        e.type?.startsWith('live:') &&
-        e.data &&
-        typeof e.data === 'object' &&
-        (e.data as Record<string, unknown>).triggerType === type,
-    ),
+  const allEvents = useDashboardStore((s) => s.events);
+  const events = useMemo(
+    () =>
+      allEvents.filter(
+        (e) =>
+          e.type?.startsWith('live:') &&
+          e.data &&
+          typeof e.data === 'object' &&
+          (e.data as Record<string, unknown>).triggerType === type,
+      ),
+    [allEvents, type],
   );
 
   const execute = useCallback(async () => {

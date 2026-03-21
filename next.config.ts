@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
 
 const withCivicAuth = createCivicAuthPlugin({
   clientId: 'e30a9566-25ca-4366-a607-29e3bad6ec8e',
+  loginSuccessUrl: '/deploy',
+  callbackUrl: '/api/auth/callback',
   cookies: {
     tokens: {
       id_token: {

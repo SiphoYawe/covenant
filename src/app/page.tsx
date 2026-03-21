@@ -16,7 +16,6 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   DashboardSquare01Icon,
-  Alert02Icon,
   ChartRelationshipIcon,
   SecurityCheckIcon,
 } from '@hugeicons/core-free-icons';
@@ -58,7 +57,7 @@ export default function Home() {
   const metrics = useMetrics();
   const agents = useAgents();
   const edges = useEdges();
-  const [showFeed, setShowFeed] = useState(false);
+  const [showFeed, setShowFeed] = useState(true);
 
   const agentValues = useMemo(() => Object.values(agents), [agents]);
   const sybilAlerts = useMemo(() => countSybilAlerts(agents), [agents]);
@@ -135,12 +134,6 @@ export default function Home() {
             iconColor="text-primary"
             trend={healthScore > 0 ? `${healthScore}% health` : undefined}
             trendColor={healthScore >= 80 ? 'text-score-excellent' : healthScore >= 50 ? 'text-score-moderate' : 'text-score-critical'}
-          />
-          <MetricCard
-            label="Sybil Alerts"
-            value={sybilAlerts}
-            icon={Alert02Icon}
-            iconColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
           />
 <MetricCard
             label="Domains"
