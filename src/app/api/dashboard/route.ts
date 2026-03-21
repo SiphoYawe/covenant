@@ -41,6 +41,8 @@ export async function GET() {
   const nameMap = new Map<string, { name: string; role: string; walletName: string }>();
   const civicFlagged = new Set<string>();
   let totalFeedback = 0;
+  // Map: "source-target" -> real 0x txHash from feedback events
+  const txHashMap = new Map<string, string>();
 
   for (const event of allEvents) {
     if (event.type === 'seed:registration' && event.agentId) {
@@ -59,6 +61,11 @@ export async function GET() {
     }
     if (event.type === 'feedback:submitted') {
       totalFeedback++;
+      // Map real tx hashes to source-target pairs
+      if (event.agentId && event.targetAgentId && event.data.txHash) {
+        const key = `${event.agentId}-${event.targetAgentId}`;
+        txHashMap.set(key, event.data.txHash as string);
+      }
     }
   }
 
@@ -111,14 +118,17 @@ export async function GET() {
     };
   }
 
-  // Build trust edges from graph edges
-  const trustEdges = edges.map(edge => ({
-    source: edge.source,
-    target: edge.target,
-    weight: parseFloat(edge.amount) || 1,
-    protocol: 'a2a',
-    txHash: edge.txHash,
-  }));
+  // Build trust edges from graph edges, using real tx hashes from feedback events
+  const trustEdges = edges.map(edge => {
+    const key = `${edge.source}-${edge.target}`;
+    return {
+      source: edge.source,
+      target: edge.target,
+      weight: parseFloat(edge.amount) || 1,
+      protocol: 'a2a',
+      txHash: txHashMap.get(key) || undefined,
+    };
+  });
 
   // Compute metrics from real edge data
   const successfulEdges = edges.filter(e => e.outcome === 'success');

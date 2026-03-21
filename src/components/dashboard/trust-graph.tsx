@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useEffect, useState } from 'react';
+import { useCallback, useMemo, useRef, useEffect, useState, type MutableRefObject } from 'react';
 import dynamic from 'next/dynamic';
 import {
   useAgents,
@@ -33,6 +33,8 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
   const agents = useAgents();
   const edges = useEdges();
   const containerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fgRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
@@ -44,6 +46,15 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
   );
 
   const selectedAgentId = useDashboardStore((s) => s.selectedAgentId);
+
+  // Spread nodes apart for clarity
+  useEffect(() => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    fg.d3Force('charge')?.strength(-300);
+    fg.d3Force('link')?.distance(100);
+    fg.d3Force('center')?.strength(0.05);
+  }, [graphData]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -147,6 +158,7 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
   return (
     <div ref={containerRef} className="w-full h-full min-h-[300px]">
       <ForceGraph2D
+        ref={fgRef}
         key={graphData.nodes.length}
         graphData={graphData}
         width={dimensions.width}
@@ -172,6 +184,7 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
         cooldownTicks={100}
         d3AlphaDecay={0.02}
         d3VelocityDecay={0.3}
+        warmupTicks={50}
       />
     </div>
   );
