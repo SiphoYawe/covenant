@@ -1,28 +1,179 @@
 @import "tailwindcss";
 
+/* Covenant Design System Tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light mode */
+  --background: #FFFFFF;
+  --foreground: #0A0A0A;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0A;
+  --primary: #00BBFF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E0E0E5;
+  --secondary-foreground: #0A0A0A;
+  --accent: #F0F9FF;
+  --accent-foreground: #0A0A0A;
+  --muted: #F5F5F5;
+  --muted-foreground: #616167;
+  --border: #E0E0E5;
+  --input: #E0E0E5;
+  --ring: #00BBFF;
+  --destructive: #CC3314;
+  --destructive-foreground: #FFFFFF;
+  --sidebar: #F8FAFC;
+  --sidebar-foreground: #8892A0;
+  --sidebar-primary: #00BBFF;
+  --sidebar-primary-foreground: #0A0A0A;
+  --sidebar-accent: #F0F9FF;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #E0E0E5;
+
+  /* Semantic */
+  --success: #A1E5A1;
+  --success-foreground: #003300;
+  --warning: #FFD9B2;
+  --warning-foreground: #4D2700;
+  --error: #FFBFB2;
+  --error-foreground: #590F00;
+  --info: #DBEAFE;
+  --info-foreground: #1E3A5F;
+
+  /* Reputation score colors */
+  --score-excellent: #34D399;
+  --score-good: #00BBFF;
+  --score-moderate: #FBBF24;
+  --score-poor: #FB923C;
+  --score-critical: #EF4444;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 24px;
+  --radius-lg: 40px;
+  --radius-pill: 999px;
+}
+
+/* Dark mode (default for Covenant) */
+.dark,
+[data-theme="dark"] {
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #0D1117;
+  --card-foreground: #FFFFFF;
+  --primary: #00BBFF;
+  --primary-foreground: #000000;
+  --secondary: #1A2030;
+  --secondary-foreground: #FFFFFF;
+  --accent: #0D1117;
+  --accent-foreground: #E8F4FD;
+  --muted: #111820;
+  --muted-foreground: #8892A0;
+  --border: #1E2A3A;
+  --input: #1E2A3A;
+  --ring: #00BBFF;
+  --destructive: #CC3314;
+  --destructive-foreground: #FFFFFF;
+  --sidebar: #080C12;
+  --sidebar-foreground: #8892A0;
+  --sidebar-primary: #00BBFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #0D1822;
+  --sidebar-accent-foreground: #E8F4FD;
+  --sidebar-border: #1E2A3A;
+
+  /* Semantic dark */
+  --success: #3B4748;
+  --success-foreground: #A1E5A1;
+  --warning: #53484F;
+  --warning-foreground: #FFD9B2;
+  --error: #53424F;
+  --error-foreground: #FFBFB2;
+  --info: #0D1822;
+  --info-foreground: #7DD3FC;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-score-excellent: var(--score-excellent);
+  --color-score-good: var(--score-good);
+  --color-score-moderate: var(--score-moderate);
+  --color-score-poor: var(--score-poor);
+  --color-score-critical: var(--score-critical);
+  --font-sans: var(--font-red-hat);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light):not([data-theme="light"]) {
+    --background: #000000;
+    --foreground: #FFFFFF;
+    --card: #0D1117;
+    --card-foreground: #FFFFFF;
+    --primary: #00BBFF;
+    --primary-foreground: #000000;
+    --secondary: #1A2030;
+    --secondary-foreground: #FFFFFF;
+    --accent: #0D1117;
+    --accent-foreground: #E8F4FD;
+    --muted: #111820;
+    --muted-foreground: #8892A0;
+    --border: #1E2A3A;
+    --input: #1E2A3A;
+    --ring: #00BBFF;
+    --destructive: #CC3314;
+    --destructive-foreground: #FFFFFF;
+    --sidebar: #080C12;
+    --sidebar-foreground: #8892A0;
+    --sidebar-primary: #00BBFF;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #0D1822;
+    --sidebar-accent-foreground: #E8F4FD;
+    --sidebar-border: #1E2A3A;
+    --success: #3B4748;
+    --success-foreground: #A1E5A1;
+    --warning: #53484F;
+    --warning-foreground: #FFD9B2;
+    --error: #53424F;
+    --error-foreground: #FFBFB2;
+    --info: #0D1822;
+    --info-foreground: #7DD3FC;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-red-hat), system-ui, sans-serif;
 }
 
 @keyframes fade-in {
@@ -36,6 +187,35 @@ body {
   }
 }
 
+@keyframes pulse-blue {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes score-update {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 300ms ease-out;
+}
+
+.animate-pulse-blue {
+  animation: pulse-blue 2s ease-in-out infinite;
+}
+
+.animate-score-update {
+  animation: score-update 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
