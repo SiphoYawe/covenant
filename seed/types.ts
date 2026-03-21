@@ -185,11 +185,15 @@ export const seedPhaseSchema = z.enum(['A', 'B', 'C', 'D', 'E']);
 export interface SeedInteraction {
   id: string;
   phase: SeedPhase;
+  sequenceNumber: number;
   requester: string;
   provider: string;
   usdcAmount: number;
   outcome: InteractionOutcome;
+  capabilityRequired: string;
   description: string;
+  isMalicious?: boolean;
+  notes?: string;
   civicFlags?: string[];
   isSybilRing?: boolean;
 }
@@ -197,21 +201,33 @@ export interface SeedInteraction {
 export const seedInteractionSchema = z.object({
   id: z.string().min(1),
   phase: seedPhaseSchema,
+  sequenceNumber: z.number().int().min(1),
   requester: z.string().min(1),
   provider: z.string().min(1),
   usdcAmount: z.number().min(0),
   outcome: interactionOutcomeSchema,
-  description: z.string().min(1),
+  capabilityRequired: z.string().min(1),
+  description: z.string().min(10),
+  isMalicious: z.boolean().optional(),
+  notes: z.string().optional(),
   civicFlags: z.array(z.string()).optional(),
   isSybilRing: z.boolean().optional(),
 });
+
+export interface InteractionValidationResult {
+  valid: boolean;
+  errors: string[];
+  budgetSummary: Record<string, number>;
+}
 
 export interface PhaseConfig {
   phase: SeedPhase;
   name: string;
   interactionCount: number;
   description: string;
+  prerequisitePhase: SeedPhase | null;
   triggerReputationCompute: boolean;
+  civicCheckEnabled: boolean;
   interactions: SeedInteraction[];
 }
 
@@ -220,9 +236,17 @@ export const phaseConfigSchema = z.object({
   name: z.string().min(1),
   interactionCount: z.number().min(0),
   description: z.string().min(1),
+  prerequisitePhase: seedPhaseSchema.nullable(),
   triggerReputationCompute: z.boolean(),
+  civicCheckEnabled: z.boolean(),
   interactions: z.array(seedInteractionSchema),
 });
+
+export interface SeedScenario {
+  phases: PhaseConfig[];
+  totalInteractions: number;
+  totalUsdcVolume: number;
+}
 
 // ──────────────────────────────────────────
 // Consolidation Types
