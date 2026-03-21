@@ -17,7 +17,6 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   DashboardSquare01Icon,
   Alert02Icon,
-  CancelCircleIcon,
   ChartRelationshipIcon,
   SecurityCheckIcon,
 } from '@hugeicons/core-free-icons';
@@ -63,11 +62,6 @@ export default function Home() {
 
   const agentValues = useMemo(() => Object.values(agents), [agents]);
   const sybilAlerts = useMemo(() => countSybilAlerts(agents), [agents]);
-  const excludedCount = useMemo(
-    () => agentValues.filter((a) => a.civicFlagged).length,
-    [agentValues],
-  );
-
   const domains = useMemo(() => {
     const set = new Set(agentValues.map((a) => a.domain).filter(Boolean));
     return set.size;
@@ -148,13 +142,7 @@ export default function Home() {
             icon={Alert02Icon}
             iconColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
           />
-          <MetricCard
-            label="Excluded"
-            value={excludedCount}
-            icon={CancelCircleIcon}
-            iconColor={excludedCount > 0 ? 'text-score-critical' : 'text-muted-foreground'}
-          />
-          <MetricCard
+<MetricCard
             label="Domains"
             value={domains}
             icon={DashboardSquare01Icon}
