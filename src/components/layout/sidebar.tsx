@@ -7,9 +7,9 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import type { IconSvgElement } from '@hugeicons/react';
 import {
   DashboardSquare01Icon,
-  ArtificialIntelligence01Icon,
-  AiNetworkIcon,
-  CreditCardIcon,
+  RoboticIcon,
+  ChartRelationshipIcon,
+  AffiliateIcon,
   PlayIcon,
   Shield01Icon,
   MoreVerticalIcon,
@@ -23,9 +23,9 @@ interface NavItem {
 
 const navigationItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: DashboardSquare01Icon },
-  { label: 'Agents', href: '/agents', icon: ArtificialIntelligence01Icon },
-  { label: 'Trust Graph', href: '/trust-graph', icon: AiNetworkIcon },
-  { label: 'Payments', href: '/payments', icon: CreditCardIcon },
+  { label: 'Agents', href: '/agents', icon: RoboticIcon },
+  { label: 'Trust Graph', href: '/trust-graph', icon: ChartRelationshipIcon },
+  { label: 'Payments', href: '/payments', icon: AffiliateIcon },
 ];
 
 const demoItems: NavItem[] = [
