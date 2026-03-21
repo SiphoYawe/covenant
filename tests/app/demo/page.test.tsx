@@ -1,16 +1,18 @@
 // @vitest-environment jsdom
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // --- Mocks ---
 
 const mockReset = vi.fn().mockResolvedValue(undefined);
-const mockTriggerAct = vi.fn().mockResolvedValue({});
+const mockExecute = vi.fn().mockResolvedValue(undefined);
+const mockTriggerReset = vi.fn();
 
 vi.mock('@/hooks/use-demo', () => ({
   useDemo: () => ({
     reset: mockReset,
-    triggerAct: mockTriggerAct,
+    triggerAct: vi.fn(),
     isResetting: false,
     resetError: null,
     demoState: { currentAct: 0, status: 'idle' },
@@ -18,16 +20,62 @@ vi.mock('@/hooks/use-demo', () => ({
     isRunning: false,
     isIdle: true,
   }),
+  useLiveTrigger: () => ({
+    execute: mockExecute,
+    isExecuting: false,
+    result: null,
+    error: null,
+    events: [],
+    reset: mockTriggerReset,
+  }),
 }));
+
+const mockStore = {
+  demoState: { currentAct: 0, status: 'idle' },
+  events: [],
+  agents: {},
+  edges: [],
+  metrics: { totalPayments: 0, totalTransactions: 0, averagePayment: 0, totalFeedback: 0 },
+  selectedAgentId: null,
+  filterBy: 'all',
+  sortBy: 'score',
+  currentPage: 1,
+  pageSize: 12,
+  protocolFilter: 'all',
+  searchQuery: '',
+  paymentsPage: 1,
+  addEvent: vi.fn(),
+  updateAgent: vi.fn(),
+  addEdge: vi.fn(),
+  updateMetrics: vi.fn(),
+  setSelectedAgent: vi.fn(),
+  setFilterBy: vi.fn(),
+  setSortBy: vi.fn(),
+  setCurrentPage: vi.fn(),
+  setPageSize: vi.fn(),
+  setProtocolFilter: vi.fn(),
+  setSearchQuery: vi.fn(),
+  setPaymentsPage: vi.fn(),
+  resetDemo: vi.fn(),
+};
+
+const useDashboardStoreMock = Object.assign(
+  (selector: (state: typeof mockStore) => unknown) => selector(mockStore),
+  { getState: () => mockStore, subscribe: vi.fn(() => vi.fn()), setState: vi.fn(), destroy: vi.fn() },
+);
 
 vi.mock('@/stores/dashboard', () => ({
   useDemoState: () => ({ currentAct: 0, status: 'idle' }),
-  useDashboardStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({ demoState: { currentAct: 0, status: 'idle' } }),
+  useEvents: () => [],
+  useDashboardStore: useDashboardStoreMock,
 }));
 
 vi.mock('zustand/react/shallow', () => ({
   useShallow: (fn: (state: unknown) => unknown) => fn,
+}));
+
+vi.mock('@/components/dashboard/seed-data-provider', () => ({
+  SeedDataProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 describe('Demo Page', () => {
@@ -35,43 +83,55 @@ describe('Demo Page', () => {
     vi.clearAllMocks();
   });
 
-  it('renders all three main components', async () => {
+  it('renders page header and trigger cards', async () => {
     const DemoPage = (await import('@/app/demo/page')).default;
     render(<DemoPage />);
 
     // Header
-    expect(screen.getByText('Covenant Demo Operator')).toBeDefined();
+    expect(screen.getByText('Live Demo Triggers')).toBeDefined();
 
-    // DemoController renders act buttons
-    expect(screen.getByText('Act 1: Registration')).toBeDefined();
-
-    // DemoStatus renders status
-    expect(screen.getByText('Ready to Demo')).toBeDefined();
-
-    // ActIndicator renders numbers
-    expect(screen.getByText('Ready to begin')).toBeDefined();
+    // Two trigger cards
+    expect(screen.getByText('Live: Execute Transaction')).toBeDefined();
+    expect(screen.getByText('Live: Detect Threat')).toBeDefined();
   });
 
-  it('renders reset button', async () => {
+  it('renders seed status section', async () => {
     const DemoPage = (await import('@/app/demo/page')).default;
     render(<DemoPage />);
 
-    expect(screen.getByText('Reset Demo')).toBeDefined();
+    expect(screen.getAllByText('Agents').length).toBeGreaterThan(0);
+    expect(screen.getByText('28')).toBeDefined();
+    expect(screen.getAllByText('Transactions').length).toBeGreaterThan(0);
+    expect(screen.getByText('210+')).toBeDefined();
   });
 
-  it('reset button requires double-click confirmation', async () => {
+  it('renders re-seed button', async () => {
     const DemoPage = (await import('@/app/demo/page')).default;
     render(<DemoPage />);
 
-    const resetBtn = screen.getByText('Reset Demo');
+    expect(screen.getByText('Re-seed')).toBeDefined();
+  });
+
+  it('re-seed button requires double-click confirmation', async () => {
+    const DemoPage = (await import('@/app/demo/page')).default;
+    render(<DemoPage />);
+
+    const resetBtn = screen.getByText('Re-seed');
 
     // First click arms it
     fireEvent.click(resetBtn);
-    expect(screen.getByText('Confirm Reset?')).toBeDefined();
+    expect(screen.getByText('Confirm Reset')).toBeDefined();
     expect(mockReset).not.toHaveBeenCalled();
 
     // Second click confirms
-    fireEvent.click(screen.getByText('Confirm Reset?'));
+    fireEvent.click(screen.getByText('Confirm Reset'));
     expect(mockReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders event stream with empty state', async () => {
+    const DemoPage = (await import('@/app/demo/page')).default;
+    render(<DemoPage />);
+
+    expect(screen.getByText('Waiting for trigger...')).toBeDefined();
   });
 });

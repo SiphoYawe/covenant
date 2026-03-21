@@ -68,3 +68,53 @@ export function useDemo() {
     triggerAct,
   };
 }
+
+// --- Live Trigger Hook ---
+
+type LiveTriggerType = 'lifecycle' | 'sybil-cascade';
+
+const TRIGGER_ENDPOINTS: Record<LiveTriggerType, string> = {
+  lifecycle: '/api/demo/live/lifecycle',
+  'sybil-cascade': '/api/demo/live/sybil-cascade',
+};
+
+export function useLiveTrigger(type: LiveTriggerType) {
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const events = useDashboardStore((s) =>
+    s.events.filter(
+      (e) =>
+        e.type.startsWith('live:') &&
+        (e.data as Record<string, unknown>).triggerType === type,
+    ),
+  );
+
+  const execute = useCallback(async () => {
+    setIsExecuting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch(TRIGGER_ENDPOINTS[type], { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error?.message ?? `${type} trigger failed`);
+      }
+      const data = await res.json();
+      setResult(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Trigger failed';
+      setError(message);
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [type]);
+
+  const reset = useCallback(() => {
+    setResult(null);
+    setError(null);
+  }, []);
+
+  return { execute, isExecuting, result, error, events, reset };
+}

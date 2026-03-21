@@ -34,6 +34,10 @@ export const EVENT_TYPES = {
   LIFECYCLE_PAYMENT_FAILED: 'lifecycle:payment-failed',
   LIFECYCLE_CIVIC_BLOCKED: 'lifecycle:civic-blocked',
   LIFECYCLE_NEGOTIATION_FAILED: 'lifecycle:negotiation-failed',
+  LIVE_TRIGGER_STARTED: 'live:trigger-started',
+  LIVE_TRIGGER_STEP: 'live:trigger-step',
+  LIVE_TRIGGER_COMPLETED: 'live:trigger-completed',
+  LIVE_TRIGGER_FAILED: 'live:trigger-failed',
 } as const;
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
