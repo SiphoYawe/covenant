@@ -11,40 +11,40 @@ import type { AgentState, TrustEdge } from '@/stores/dashboard';
 describe('graph-utils', () => {
   describe('getNodeColor', () => {
     it('returns green for score >= 8', () => {
-      expect(getNodeColor(8)).toBe('#22c55e');
-      expect(getNodeColor(10)).toBe('#22c55e');
-      expect(getNodeColor(9.5)).toBe('#22c55e');
+      expect(getNodeColor(8)).toBe('#34D399');
+      expect(getNodeColor(10)).toBe('#34D399');
+      expect(getNodeColor(9.5)).toBe('#34D399');
     });
 
-    it('returns yellow for score >= 4 and < 8', () => {
-      expect(getNodeColor(4)).toBe('#eab308');
-      expect(getNodeColor(7.9)).toBe('#eab308');
-      expect(getNodeColor(5)).toBe('#eab308');
+    it('returns blue for score >= 4 and < 8', () => {
+      expect(getNodeColor(4)).toBe('#00BBFF');
+      expect(getNodeColor(7.9)).toBe('#00BBFF');
+      expect(getNodeColor(5)).toBe('#00BBFF');
     });
 
     it('returns red for score < 4', () => {
-      expect(getNodeColor(3.9)).toBe('#ef4444');
-      expect(getNodeColor(0)).toBe('#ef4444');
-      expect(getNodeColor(1)).toBe('#ef4444');
+      expect(getNodeColor(3.9)).toBe('#EF4444');
+      expect(getNodeColor(0)).toBe('#EF4444');
+      expect(getNodeColor(1)).toBe('#EF4444');
     });
   });
 
   describe('getNodeRadius', () => {
-    it('returns 4 + score * 2', () => {
+    it('returns 4 + score * 1.6', () => {
       expect(getNodeRadius(0)).toBe(4);
-      expect(getNodeRadius(5)).toBe(14);
-      expect(getNodeRadius(10)).toBe(24);
+      expect(getNodeRadius(5)).toBe(12);
+      expect(getNodeRadius(10)).toBe(20);
     });
   });
 
   describe('getEdgeColor', () => {
     it('returns green for success outcome', () => {
-      expect(getEdgeColor('success')).toBe('#22c55e');
+      expect(getEdgeColor('success')).toBe('#34D399');
     });
 
-    it('returns red for non-success outcome', () => {
-      expect(getEdgeColor('failed')).toBe('#ef4444');
-      expect(getEdgeColor('rejected')).toBe('#ef4444');
+    it('returns red for fail outcome and default for other', () => {
+      expect(getEdgeColor('fail')).toBe('#EF4444');
+      expect(getEdgeColor('rejected')).toBe('#1E2A3A');
     });
   });
 

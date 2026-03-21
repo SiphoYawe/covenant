@@ -35,7 +35,9 @@ describe('AgentDetail component', () => {
     render(<AgentDetail />);
     expect(screen.getByText('Researcher')).toBeDefined();
     expect(screen.getByText('researcher')).toBeDefined();
-    expect(screen.getByText('9.1/10')).toBeDefined();
+    // Score "9.1" and "/10" are in separate elements
+    expect(screen.getByText('9.1')).toBeDefined();
+    expect(screen.getByText('/10')).toBeDefined();
   });
 
   it('shows FLAGGED badge for civic-flagged agent', () => {
@@ -51,7 +53,7 @@ describe('AgentDetail component', () => {
     expect(screen.getByText('FLAGGED')).toBeDefined();
   });
 
-  it('renders no activity message for fresh agent', () => {
+  it('renders AI explanation fallback for fresh agent', () => {
     useDashboardStore.getState().updateAgent('0xnew', {
       name: 'NewAgent',
       role: 'researcher',
@@ -59,6 +61,6 @@ describe('AgentDetail component', () => {
     useDashboardStore.getState().setSelectedAgent('0xnew');
 
     render(<AgentDetail />);
-    expect(screen.getByText('No activity recorded yet.')).toBeDefined();
+    expect(screen.getByText('Awaiting first assessment from the reputation engine.')).toBeDefined();
   });
 });

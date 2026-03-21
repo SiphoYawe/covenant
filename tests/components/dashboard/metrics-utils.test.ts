@@ -85,19 +85,19 @@ describe('metrics-utils', () => {
   });
 
   describe('getHealthColor', () => {
-    it('returns green for score >= 80', () => {
-      expect(getHealthColor(80)).toBe('text-green-400');
-      expect(getHealthColor(100)).toBe('text-green-400');
+    it('returns excellent for score >= 80', () => {
+      expect(getHealthColor(80)).toBe('text-score-excellent');
+      expect(getHealthColor(100)).toBe('text-score-excellent');
     });
 
-    it('returns yellow for score >= 50 and < 80', () => {
-      expect(getHealthColor(50)).toBe('text-yellow-400');
-      expect(getHealthColor(79)).toBe('text-yellow-400');
+    it('returns moderate for score >= 50 and < 80', () => {
+      expect(getHealthColor(50)).toBe('text-score-moderate');
+      expect(getHealthColor(79)).toBe('text-score-moderate');
     });
 
-    it('returns red for score < 50', () => {
-      expect(getHealthColor(49)).toBe('text-red-400');
-      expect(getHealthColor(0)).toBe('text-red-400');
+    it('returns critical for score < 50', () => {
+      expect(getHealthColor(49)).toBe('text-score-critical');
+      expect(getHealthColor(0)).toBe('text-score-critical');
     });
   });
 

@@ -27,28 +27,28 @@ describe('feed-utils', () => {
   describe('getProtocolConfig', () => {
     it('returns correct config for all 6 protocols', () => {
       expect(getProtocolConfig(Protocol.A2a).label).toBe('A2A');
-      expect(getProtocolConfig(Protocol.A2a).bg).toContain('blue');
+      expect(getProtocolConfig(Protocol.A2a).bg).toBe('bg-primary/20');
 
       expect(getProtocolConfig(Protocol.X402).label).toBe('x402');
-      expect(getProtocolConfig(Protocol.X402).bg).toContain('green');
+      expect(getProtocolConfig(Protocol.X402).bg).toBe('bg-score-excellent/20');
 
       expect(getProtocolConfig(Protocol.Mcp).label).toBe('MCP');
       expect(getProtocolConfig(Protocol.Mcp).bg).toContain('purple');
 
       expect(getProtocolConfig(Protocol.Erc8004).label).toBe('ERC-8004');
-      expect(getProtocolConfig(Protocol.Erc8004).bg).toContain('orange');
+      expect(getProtocolConfig(Protocol.Erc8004).bg).toBe('bg-score-moderate/20');
 
       expect(getProtocolConfig(Protocol.Civic).label).toBe('Civic');
-      expect(getProtocolConfig(Protocol.Civic).bg).toContain('red');
+      expect(getProtocolConfig(Protocol.Civic).bg).toBe('bg-error/20');
 
       expect(getProtocolConfig(Protocol.CovenantAi).label).toBe('Covenant AI');
-      expect(getProtocolConfig(Protocol.CovenantAi).bg).toContain('amber');
+      expect(getProtocolConfig(Protocol.CovenantAi).bg).toBe('bg-warning/20');
     });
 
     it('returns fallback for unknown protocol', () => {
       const config = getProtocolConfig('unknown-proto');
       expect(config.label).toBe('unknown-proto');
-      expect(config.bg).toContain('zinc');
+      expect(config.bg).toBe('bg-secondary');
     });
 
     it('has 6 protocol entries', () => {

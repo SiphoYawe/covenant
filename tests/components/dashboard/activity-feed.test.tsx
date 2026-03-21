@@ -62,8 +62,8 @@ describe('ActivityFeed component', () => {
     );
 
     render(<ActivityFeed />);
-    expect(screen.getByText('ERC-8004')).toBeDefined();
-    expect(screen.getByText('x402')).toBeDefined();
+    expect(screen.getAllByText('ERC-8004').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('x402').length).toBeGreaterThan(0);
   });
 
   it('renders civic flag events with warning styling', () => {
@@ -78,7 +78,7 @@ describe('ActivityFeed component', () => {
     );
 
     const { container } = render(<ActivityFeed />);
-    const civicRow = container.querySelector('.border-red-500');
+    const civicRow = container.querySelector('.border-error');
     expect(civicRow).not.toBeNull();
   });
 

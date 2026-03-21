@@ -8,18 +8,18 @@ import {
 describe('ReputationCard utilities', () => {
   describe('getScoreColor', () => {
     it('returns green for score >= 8', () => {
-      expect(getScoreColor(8)).toBe('text-green-400');
-      expect(getScoreColor(10)).toBe('text-green-400');
+      expect(getScoreColor(8)).toBe('text-score-excellent');
+      expect(getScoreColor(10)).toBe('text-score-excellent');
     });
 
-    it('returns yellow for score >= 4 and < 8', () => {
-      expect(getScoreColor(4)).toBe('text-yellow-400');
-      expect(getScoreColor(7.9)).toBe('text-yellow-400');
+    it('returns moderate for score >= 4 and < 6', () => {
+      expect(getScoreColor(4)).toBe('text-score-moderate');
+      expect(getScoreColor(5.9)).toBe('text-score-moderate');
     });
 
-    it('returns red for score < 4', () => {
-      expect(getScoreColor(3.9)).toBe('text-red-400');
-      expect(getScoreColor(0)).toBe('text-red-400');
+    it('returns critical for score < 2', () => {
+      expect(getScoreColor(1.9)).toBe('text-score-critical');
+      expect(getScoreColor(0)).toBe('text-score-critical');
     });
   });
 
@@ -27,25 +27,25 @@ describe('ReputationCard utilities', () => {
     it('shows up arrow when score increased', () => {
       const result = getTrendIndicator(9, 7);
       expect(result.symbol).toBe('\u2191');
-      expect(result.color).toBe('text-green-400');
+      expect(result.color).toBe('text-score-excellent');
     });
 
     it('shows down arrow when score decreased', () => {
       const result = getTrendIndicator(3, 7);
       expect(result.symbol).toBe('\u2193');
-      expect(result.color).toBe('text-red-400');
+      expect(result.color).toBe('text-score-critical');
     });
 
     it('shows dash when score unchanged', () => {
       const result = getTrendIndicator(5, 5);
       expect(result.symbol).toBe('—');
-      expect(result.color).toBe('text-zinc-500');
+      expect(result.color).toBe('text-muted-foreground');
     });
 
     it('shows dash when previousScore is null', () => {
       const result = getTrendIndicator(5, null);
       expect(result.symbol).toBe('—');
-      expect(result.color).toBe('text-zinc-500');
+      expect(result.color).toBe('text-muted-foreground');
     });
   });
 
