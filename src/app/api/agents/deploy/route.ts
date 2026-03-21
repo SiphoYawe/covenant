@@ -3,12 +3,17 @@ import {
   DeployRequestSchema,
   type ProvisionedDeployResponse,
   type BYOWDeployResponse,
+  type HumanDeployResponse,
+  type HumanDeployRequest,
 } from '@/lib/deploy/types';
 import { provisionWallet, fundFromPool, getSystemPoolBalance, generateNonce } from '@/lib/wallets/provisioner';
 import { registerAgentDynamic } from '@/lib/protocols/erc8004/identity';
 import { generateDynamicAgentCard } from '@/lib/protocols/a2a/agent-card';
 import { createEventBus, EVENT_TYPES, Protocol } from '@/lib/events';
 import { kvSet } from '@/lib/storage/kv';
+import { requireAuth, getAuthenticatedWallets, AuthError } from '@/lib/auth/civic';
+import { writeDeployerAttestation } from '@/lib/deploy/attestation';
+import { addLinkedAgent } from '@/lib/deploy/deployer';
 import type { ApiError } from '@/types';
 
 const FUNDING_AMOUNT = BigInt(5_000_000); // 5 USDC (6 decimals)
@@ -32,21 +37,25 @@ export async function POST(request: Request) {
     const data = parsed.data;
 
     if (data.mode === 'human') {
-      const error: ApiError = {
-        error: {
-          code: 'NOT_IMPLEMENTED',
-          message: 'Human deploy mode is not yet supported. See Story 10.4.',
-        },
-      };
-      return NextResponse.json(error, { status: 501 });
+      return await handleHuman(data);
     }
 
     if (data.mode === 'provisioned') {
-      return handleProvisioned(data);
+      return await handleProvisioned(data);
     }
 
-    return handleBYOW(data);
+    return await handleBYOW(data);
   } catch (err) {
+    if (err instanceof Error && err.name === 'AuthError' && 'status' in err) {
+      const authErr = err as AuthError;
+      const error: ApiError = {
+        error: {
+          code: 'AUTH_REQUIRED',
+          message: authErr.message,
+        },
+      };
+      return NextResponse.json(error, { status: authErr.status });
+    }
     const error: ApiError = {
       error: {
         code: 'DEPLOY_FAILED',
@@ -136,6 +145,108 @@ async function handleProvisioned(
   const response: ProvisionedDeployResponse = {
     agentId: registration.agentId,
     address: wallet.address,
+    agentCard,
+  };
+
+  return NextResponse.json(response, { status: 201 });
+}
+
+async function handleHuman(
+  data: HumanDeployRequest,
+): Promise<NextResponse> {
+  // Step 1: Require Civic Auth
+  await requireAuth();
+
+  // Step 2: Get human's embedded wallet
+  const wallets = await getAuthenticatedWallets();
+  if (wallets.length === 0) {
+    const error: ApiError = {
+      error: {
+        code: 'NO_WALLET',
+        message: 'No embedded wallet found for authenticated user',
+      },
+    };
+    return NextResponse.json(error, { status: 400 });
+  }
+  const humanAddress = wallets[0];
+
+  // Step 3: Determine agent wallet
+  let agentAddress: string;
+  let agentPrivateKey: string;
+
+  if (data.useOwnWallet) {
+    // Use the human's embedded wallet directly
+    agentAddress = humanAddress;
+    // For embedded wallets, we use the system key for registration
+    // (the Civic embedded wallet signs via the SDK, not raw private key)
+    const { getWallet } = await import('@/lib/wallets');
+    const systemWallet = getWallet('system');
+    agentPrivateKey = systemWallet.client.account.address;
+  } else {
+    // Provision a new wallet and fund it
+    const poolBalance = await getSystemPoolBalance();
+    if (poolBalance < FUNDING_AMOUNT) {
+      const error: ApiError = {
+        error: {
+          code: 'INSUFFICIENT_POOL_BALANCE',
+          message: `System pool has ${poolBalance.toString()} units, need ${FUNDING_AMOUNT.toString()}`,
+        },
+      };
+      return NextResponse.json(error, { status: 503 });
+    }
+
+    const wallet = await provisionWallet();
+    await fundFromPool(wallet.address, FUNDING_AMOUNT);
+    agentAddress = wallet.address;
+    agentPrivateKey = wallet.privateKey;
+  }
+
+  // Step 4: Register on ERC-8004
+  const registration = await registerAgentDynamic({
+    name: data.name,
+    description: data.description,
+    capabilities: data.capabilities,
+    privateKey: agentPrivateKey,
+    address: agentAddress,
+  });
+
+  // Step 5: Generate A2A agent card
+  const agentCard = generateDynamicAgentCard({
+    name: data.name,
+    description: data.description,
+    capabilities: data.capabilities,
+    agentId: registration.agentId,
+    address: agentAddress,
+  });
+
+  await kvSet(`agent:${registration.agentId}:card`, agentCard);
+
+  // Step 6: Reputation linking (if requested)
+  if (data.linkReputation) {
+    await writeDeployerAttestation(registration.agentId, humanAddress);
+    await addLinkedAgent(humanAddress, registration.agentId);
+  }
+
+  // Step 7: Emit AGENT_DEPLOYED_HUMAN event
+  const eventBus = createEventBus();
+  await eventBus.emit({
+    type: EVENT_TYPES.AGENT_DEPLOYED_HUMAN,
+    protocol: Protocol.Erc8004,
+    agentId: registration.agentId,
+    data: {
+      mode: 'human',
+      agentId: registration.agentId,
+      address: agentAddress,
+      humanAddress,
+      linkedReputation: data.linkReputation,
+    },
+  });
+
+  const response: HumanDeployResponse = {
+    agentId: registration.agentId,
+    address: agentAddress,
+    humanAddress,
+    linkedReputation: data.linkReputation,
     agentCard,
   };
 

@@ -290,7 +290,7 @@ describe('POST /api/agents/deploy', () => {
       expect(response.status).toBe(400);
     });
 
-    it('returns 501 for human mode (not yet implemented)', async () => {
+    it('returns 401 for human mode without Civic session', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest({
         mode: 'human',
@@ -300,8 +300,8 @@ describe('POST /api/agents/deploy', () => {
         linkReputation: true,
       }));
 
-      expect(response.status).toBe(501);
-      expect((await response.json()).error.code).toBe('NOT_IMPLEMENTED');
+      expect(response.status).toBe(401);
+      expect((await response.json()).error.code).toBe('AUTH_REQUIRED');
     });
   });
 });
