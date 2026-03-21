@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Red_Hat_Display, Geist_Mono } from "next/font/google";
+import { CivicAuthProvider } from "@civic/auth-web3/nextjs";
+import { Suspense } from "react";
 import "./globals.css";
 
 const redHatDisplay = Red_Hat_Display({
@@ -27,7 +29,13 @@ export default function RootLayout({
       lang="en"
       className={`dark ${redHatDisplay.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Suspense>
+          <CivicAuthProvider>
+            {children}
+          </CivicAuthProvider>
+        </Suspense>
+      </body>
     </html>
   );
 }
