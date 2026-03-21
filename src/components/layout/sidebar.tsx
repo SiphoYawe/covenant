@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserButton } from '@civic/auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import type { IconSvgElement } from '@hugeicons/react';
 import {
@@ -117,9 +116,9 @@ export function Sidebar() {
         />
       </div>
 
-      {/* Footer: Auth */}
+      {/* Footer */}
       <div className="px-6 py-4 border-t border-sidebar-border">
-        <UserButton />
+        <span className="text-xs text-muted-foreground">Covenant v1</span>
       </div>
     </aside>
   );
