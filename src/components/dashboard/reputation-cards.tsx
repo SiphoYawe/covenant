@@ -58,7 +58,7 @@ export function ReputationCards() {
           role={agent.role}
           score={agent.reputationScore ?? 0}
           previousScore={null}
-          paymentVolume={0}
+          paymentVolume={agent.paymentVolume ?? 0}
           jobCount={0}
           explanation={null}
           civicFlags={

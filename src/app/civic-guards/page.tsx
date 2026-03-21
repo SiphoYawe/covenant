@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
-import { useAgents, useEdges, useEvents } from '@/stores/dashboard';
+import { useAgents, useEvents } from '@/stores/dashboard';
 import { formatTimestamp } from '@/components/dashboard/feed-utils';
 import { Badge } from '@/components/ui/badge';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -13,52 +13,14 @@ import {
   Shield01Icon,
 } from '@hugeicons/core-free-icons';
 
-// -- Adversarial agent threat metadata --
-
-type ThreatProfile = {
-  walletName: string;
-  name: string;
-  attackType: 'prompt-injection' | 'sybil-ring';
-  attackDescription: string;
-  severity: 'critical';
-};
-
-const THREAT_PROFILES: ThreatProfile[] = [
-  {
-    walletName: 'X1',
-    name: 'ShadowReview',
-    attackType: 'prompt-injection',
-    attackDescription:
-      'Embeds malicious code suggestions disguised as optimizations in otherwise legitimate code reviews. Recommends removing security checks, hardcoding credentials, and disabling CSRF protection.',
-    severity: 'critical',
-  },
-  {
-    walletName: 'X2',
-    name: 'EchoNode',
-    attackType: 'sybil-ring',
-    attackDescription:
-      'Operates as part of a reputation farming ring with MirrorBot and GhostAgent. Engages in mutual positive feedback loops and circular small-value payments to inflate reputation scores.',
-    severity: 'critical',
-  },
-  {
-    walletName: 'X3',
-    name: 'MirrorBot',
-    attackType: 'sybil-ring',
-    attackDescription:
-      'Mirrors EchoNode behavior patterns to appear independent. Participates in circular payment routing and provides inflated reviews to ring members regardless of actual work quality.',
-    severity: 'critical',
-  },
-  {
-    walletName: 'X4',
-    name: 'GhostAgent',
-    attackType: 'sybil-ring',
-    attackDescription:
-      'Anchor of the Sybil ring. Dual strategy: coordinates circular reputation boosting with ring members, and undercuts legitimate providers at 50% below market rate to attract budget buyers.',
-    severity: 'critical',
-  },
+// Civic event types from the event bus
+const CIVIC_EVENT_TYPES = [
+  'civic:identity-checked',
+  'civic:behavioral-checked',
+  'civic:flagged',
+  'civic:tool-blocked',
+  'civic:resolved',
 ];
-
-// -- Civic inspection entry type --
 
 type CivicInspection = {
   id: string;
@@ -71,71 +33,102 @@ type CivicInspection = {
   description: string;
 };
 
-export default function CivicGuardsPage() {
-  const agents = useAgents();
-  const edges = useEdges();
-  const events = useEvents();
+function eventToInspection(
+  event: { id: string; timestamp: number; type: string; agentId?: string; data: Record<string, unknown> },
+  agentName: string,
+): CivicInspection | null {
+  const agentId = event.agentId ?? '';
 
-  // Build civic inspection timeline from store agents
-  const inspections = useMemo<CivicInspection[]>(() => {
-    const agentList = Object.values(agents);
-    if (agentList.length === 0) return [];
-
-    const adversarialIds = new Set(['X1', 'X2', 'X3', 'X4']);
-    const baseTime = Date.now() - agentList.length * 120_000;
-    const items: CivicInspection[] = [];
-    let seq = 0;
-
-    // Layer 1 identity checks for all 28 agents
-    for (const agent of agentList) {
-      const isAdversarial = adversarialIds.has(agent.agentId);
-      items.push({
-        id: `civic-l1-${agent.agentId}-${seq}`,
-        timestamp: baseTime + seq * 90_000,
-        agentName: agent.name || agent.agentId,
-        agentId: agent.agentId,
+  switch (event.type) {
+    case 'civic:identity-checked':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        agentName,
+        agentId,
         layer: 'L1',
-        result: isAdversarial ? 'flag' : 'pass',
-        severity: isAdversarial ? 'warning' : 'clean',
-        description: isAdversarial
-          ? `Identity verification flagged suspicious wallet activity for ${agent.name || agent.agentId}`
-          : `Identity verified via Civic Auth for ${agent.name || agent.agentId}`,
-      });
-      seq++;
-    }
+        result: event.data.passed ? 'pass' : 'flag',
+        severity: event.data.passed ? 'clean' : 'warning',
+        description: event.data.passed
+          ? `Identity verified via Civic Auth for ${agentName}`
+          : `Identity verification flagged for ${agentName}`,
+      };
 
-    // Layer 2 behavioral checks for adversarial agents
-    const threatMap: Record<string, ThreatProfile> = {};
-    for (const t of THREAT_PROFILES) {
-      threatMap[t.walletName] = t;
-    }
+    case 'civic:behavioral-checked':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        agentName,
+        agentId,
+        layer: 'L2',
+        result: 'pass',
+        severity: 'clean',
+        description: `Behavioral check passed for ${agentName} (${event.data.direction ?? 'output'})`,
+      };
 
-    for (const id of ['X1', 'X2', 'X3', 'X4']) {
-      const agent = agents[id];
-      const threat = threatMap[id];
-      if (!agent || !threat) continue;
-
-      items.push({
-        id: `civic-l2-${id}-${seq}`,
-        timestamp: baseTime + seq * 90_000,
-        agentName: agent.name || id,
-        agentId: id,
+    case 'civic:flagged':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        agentName,
+        agentId,
         layer: 'L2',
         result: 'catch',
         severity: 'critical',
-        description:
-          threat.attackType === 'prompt-injection'
-            ? `Behavioral analysis caught prompt injection attempt from ${agent.name || id}`
-            : `Sybil ring detected: ${agent.name || id} identified as coordinated farming participant`,
-      });
-      seq++;
-    }
+        description: `${event.data.attackType ?? 'Threat'} detected from ${agentName}: ${event.data.evidence ?? 'Flagged by Civic behavioral analysis'}`,
+      };
 
-    // Sort by timestamp descending (newest first)
-    return items.sort((a, b) => b.timestamp - a.timestamp);
+    case 'civic:tool-blocked':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        agentName,
+        agentId,
+        layer: 'L2',
+        result: 'catch',
+        severity: 'critical',
+        description: `Unauthorized tool call blocked for ${agentName}: ${event.data.attemptedTool ?? 'unknown'}`,
+      };
+
+    case 'civic:resolved':
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        agentName,
+        agentId,
+        layer: 'L2',
+        result: 'catch',
+        severity: 'critical',
+        description: `Threat resolved for ${agentName}: ${event.data.action ?? 'blocked'}`,
+      };
+
+    default:
+      return null;
+  }
+}
+
+export default function CivicGuardsPage() {
+  const agents = useAgents();
+  const events = useEvents();
+
+  // Build inspection timeline from real Civic events in the store
+  const inspections = useMemo<CivicInspection[]>(() => {
+    return events
+      .filter((e) => CIVIC_EVENT_TYPES.includes(e.type))
+      .map((e) => {
+        const agentName = e.agentId ? (agents[e.agentId]?.name ?? e.agentId) : 'Unknown';
+        return eventToInspection(e, agentName);
+      })
+      .filter((i): i is CivicInspection => i !== null)
+      .sort((a, b) => b.timestamp - a.timestamp);
+  }, [events, agents]);
+
+  // Flagged agents from real store state
+  const flaggedAgents = useMemo(() => {
+    return Object.values(agents).filter((a) => a.civicFlagged);
   }, [agents]);
 
-  // Summary metrics
+  // Summary metrics from real data
   const metrics = useMemo(() => {
     const totalInspections = inspections.length;
     const l1Passes = inspections.filter(
@@ -164,12 +157,6 @@ export default function CivicGuardsPage() {
             <h1 className="text-2xl font-semibold text-foreground">
               Civic Guards
             </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-score-excellent animate-pulse" />
-            <span className="text-sm text-score-excellent font-medium">
-              MCP Connected
-            </span>
           </div>
         </div>
 
@@ -221,8 +208,7 @@ export default function CivicGuardsPage() {
             <div className="flex-1 overflow-y-auto">
               {inspections.length === 0 ? (
                 <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
-                  No inspection data available. Seed data will populate
-                  automatically.
+                  No Civic inspections yet. Run the seed engine or trigger a live demo to generate real inspections.
                 </div>
               ) : (
                 inspections.map((entry) => (
@@ -232,21 +218,27 @@ export default function CivicGuardsPage() {
             </div>
           </div>
 
-          {/* Right: Flagged agent threat cards (2/5 width) */}
+          {/* Right: Flagged agents from real store data (2/5 width) */}
           <div className="col-span-2 flex flex-col gap-4 overflow-y-auto min-h-0">
             <h2 className="text-base font-semibold text-foreground px-1">
               Flagged Agents
             </h2>
-            {THREAT_PROFILES.map((threat) => {
-              const agent = agents[threat.walletName];
-              return (
-                <ThreatCard
-                  key={threat.walletName}
-                  threat={threat}
-                  reputationScore={agent?.reputationScore}
+            {flaggedAgents.length === 0 ? (
+              <div className="bg-card rounded-3xl border border-border p-6 flex items-center justify-center">
+                <span className="text-muted-foreground text-sm">
+                  No agents flagged by Civic yet.
+                </span>
+              </div>
+            ) : (
+              flaggedAgents.map((agent) => (
+                <FlaggedAgentCard
+                  key={agent.agentId}
+                  name={agent.name || agent.agentId}
+                  role={agent.role}
+                  reputationScore={agent.reputationScore}
                 />
-              );
-            })}
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -317,22 +309,15 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
     <div
       className={`flex items-center gap-3 px-5 py-3 border-b border-border transition-colors ${rowBg}`}
     >
-      {/* Severity dot */}
       <span className={`w-2 h-2 rounded-full ${severityDot} shrink-0`} />
-
-      {/* Icon */}
       <HugeiconsIcon
         icon={resultIcon}
         size={16}
         className={`shrink-0 ${resultColor}`}
       />
-
-      {/* Agent name */}
       <span className="text-[13px] font-medium text-foreground w-28 shrink-0 truncate">
         {entry.agentName}
       </span>
-
-      {/* Layer badge */}
       {entry.layer === 'L1' ? (
         <Badge className="bg-primary/20 text-primary text-[11px] px-2 py-0.5">
           L1
@@ -342,8 +327,6 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
           L2
         </Badge>
       )}
-
-      {/* Description */}
       <span
         className={`flex-1 text-[13px] ${
           entry.severity === 'critical'
@@ -355,8 +338,6 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
       >
         {entry.description}
       </span>
-
-      {/* Timestamp */}
       <span className="text-xs text-muted-foreground shrink-0">
         {formatTimestamp(entry.timestamp)}
       </span>
@@ -364,28 +345,19 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
   );
 }
 
-// -- Threat card component --
+// -- Flagged agent card (from real store data) --
 
-function ThreatCard({
-  threat,
+function FlaggedAgentCard({
+  name,
+  role,
   reputationScore,
 }: {
-  threat: ThreatProfile;
+  name: string;
+  role: string;
   reputationScore?: number;
 }) {
-  const attackTypeLabel =
-    threat.attackType === 'prompt-injection'
-      ? 'Prompt Injection'
-      : 'Sybil Ring';
-
-  const attackTypeBadgeBg =
-    threat.attackType === 'prompt-injection'
-      ? 'bg-score-critical/20 text-score-critical'
-      : 'bg-purple-600/20 text-purple-400';
-
   return (
     <div className="bg-card rounded-3xl border border-score-critical/30 p-5 flex flex-col gap-3">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <HugeiconsIcon
@@ -394,38 +366,26 @@ function ThreatCard({
             className="text-score-critical"
           />
           <span className="text-[15px] font-semibold text-foreground">
-            {threat.name}
+            {name}
           </span>
         </div>
-        {reputationScore !== undefined && (
+        {reputationScore != null && (
           <span className="text-sm font-bold text-score-critical">
             {reputationScore.toFixed(1)}/10
           </span>
         )}
       </div>
-
-      {/* Attack type badge + severity */}
       <div className="flex items-center gap-2">
-        <Badge className={`${attackTypeBadgeBg} text-[11px] px-2 py-0.5`}>
-          {attackTypeLabel}
+        <Badge className="bg-score-critical/20 text-score-critical text-[11px] px-2 py-0.5">
+          {role}
         </Badge>
         <Badge className="bg-score-critical/20 text-score-critical text-[11px] px-2 py-0.5">
-          Critical
+          Civic Flagged
         </Badge>
       </div>
-
-      {/* Description */}
-      <p className="text-[13px] text-muted-foreground leading-relaxed">
-        {threat.attackDescription}
-      </p>
-
-      {/* Status bar */}
       <div className="flex items-center gap-2 pt-1 border-t border-border">
         <span className="w-2 h-2 rounded-full bg-score-critical" />
         <span className="text-xs text-score-critical font-medium">
-          Blocked by Civic L2
-        </span>
-        <span className="text-xs text-muted-foreground ml-auto">
           Excluded from marketplace
         </span>
       </div>
