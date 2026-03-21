@@ -12,6 +12,7 @@ import {
   AffiliateIcon,
   PlayIcon,
   Shield01Icon,
+  RocketIcon,
   MoreVerticalIcon,
 } from '@hugeicons/core-free-icons';
 
@@ -31,6 +32,10 @@ const navigationItems: NavItem[] = [
 const demoItems: NavItem[] = [
   { label: 'Run Demo', href: '/demo', icon: PlayIcon },
   { label: 'Civic Guards', href: '/civic-guards', icon: Shield01Icon },
+];
+
+const actionItems: NavItem[] = [
+  { label: 'Deploy Agent', href: '/deploy', icon: RocketIcon },
 ];
 
 function NavSection({
@@ -103,6 +108,11 @@ export function Sidebar() {
         <NavSection
           label="Demo"
           items={demoItems}
+          currentPath={pathname}
+        />
+        <NavSection
+          label="Actions"
+          items={actionItems}
           currentPath={pathname}
         />
       </div>

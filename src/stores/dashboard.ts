@@ -172,6 +172,17 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
           });
         }
         break;
+
+      case EVENT_TYPES.AGENT_DEPLOYED:
+      case EVENT_TYPES.AGENT_DEPLOYED_HUMAN:
+        if (event.agentId) {
+          updateAgent(event.agentId, {
+            name: (data.name as string) || '',
+            role: (data.mode as string) || 'deployed',
+            lastUpdated: event.timestamp,
+          });
+        }
+        break;
     }
   },
 
