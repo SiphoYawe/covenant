@@ -139,7 +139,7 @@ export default function Home() {
             value={avgReputation.toFixed(1)}
             icon={SecurityCheckIcon}
             iconColor="text-primary"
-            trend={`${healthScore}% health`}
+            trend={healthScore > 0 ? `${healthScore}% health` : undefined}
             trendColor={healthScore >= 80 ? 'text-score-excellent' : healthScore >= 50 ? 'text-score-moderate' : 'text-score-critical'}
           />
           <MetricCard

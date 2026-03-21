@@ -27,6 +27,7 @@ export type TrustEdge = {
   target: string;
   weight: number;
   protocol: string;
+  txHash?: string;
 };
 
 export type EconomicMetrics = {
@@ -182,6 +183,47 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
             lastUpdated: event.timestamp,
           });
         }
+        break;
+
+      // --- Seed event types ---
+      case 'seed:registration':
+        if (event.agentId) {
+          updateAgent(event.agentId, {
+            name: (data.name as string) || '',
+            role: (data.role as string) || '',
+            lastUpdated: event.timestamp,
+          });
+        }
+        break;
+
+      case 'seed:interaction': {
+        const requester = (data.requester as string) || event.agentId;
+        const provider = (data.provider as string) || event.targetAgentId;
+        const usdcAmount = (data.usdcAmount as number) || 0;
+        if (requester && provider) {
+          addEdge({
+            source: requester,
+            target: provider,
+            weight: usdcAmount || 1,
+            protocol: event.protocol,
+            txHash: (data.txHash as string) || undefined,
+          });
+          if (usdcAmount > 0) {
+            updateMetrics({
+              totalPayments: get().metrics.totalPayments + usdcAmount,
+              totalTransactions: get().metrics.totalTransactions + 1,
+            });
+          }
+        }
+        break;
+      }
+
+      case 'seed:reputation-computed':
+        // Log only, no specific store mutation needed
+        break;
+
+      case 'seed:phase-complete':
+        // Informational event, no store mutation needed
         break;
     }
   },

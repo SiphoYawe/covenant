@@ -30,6 +30,11 @@ const SSE_EVENT_TYPES = [
   EVENT_TYPES.DEMO_ACT_CHANGED,
   EVENT_TYPES.DEMO_RESET,
   EVENT_TYPES.DEMO_COMPLETE,
+  // Seed event types emitted by the seeding engine
+  'seed:registration',
+  'seed:interaction',
+  'seed:phase-complete',
+  'seed:reputation-computed',
 ] as const;
 
 export function useEvents(endpoint = '/api/events/stream') {

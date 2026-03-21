@@ -5,10 +5,13 @@ export function computeHealthScore(
   agents: Record<string, AgentState>,
   sybilAlerts: number,
 ): number {
+  const agentValues = Object.values(agents);
+  // No agents = no health data
+  if (agentValues.length === 0) return 0;
+
   const total = metrics.totalTransactions;
   const successRate = total > 0 ? (total - (metrics.totalFeedback ?? 0)) / total : 0;
 
-  const agentValues = Object.values(agents);
   const scored = agentValues.filter((a) => a.reputationScore != null);
   const avgReputation =
     scored.length > 0

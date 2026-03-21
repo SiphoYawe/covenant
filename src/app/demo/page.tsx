@@ -8,6 +8,7 @@ import { formatUSDCCompact } from '@/components/dashboard/metrics-utils';
 import { LiveTriggerCard } from '@/components/demo/live-trigger-card';
 import { LiveEventStream } from '@/components/demo/live-event-stream';
 import { TriggerSummary } from '@/components/demo/trigger-summary';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 const LIFECYCLE_STEPS = [
   { name: 'Discovery', protocol: 'a2a', duration: '~2s' },
@@ -65,6 +66,7 @@ export default function DemoPage() {
 
   return (
     <AppLayout>
+      <ErrorBoundary>
       <div className="flex flex-col gap-6 p-8 h-full overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -162,6 +164,7 @@ export default function DemoPage() {
           <p className="text-xs text-score-critical">Sybil cascade error: {sybilCascade.error}</p>
         )}
       </div>
+      </ErrorBoundary>
     </AppLayout>
   );
 }

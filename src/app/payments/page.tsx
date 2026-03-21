@@ -20,6 +20,7 @@ type Transaction = {
   toName: string;
   amount: number;
   protocol: string;
+  txHash?: string;
 };
 
 // --- Metric Card ---
@@ -70,6 +71,7 @@ export default function PaymentsPage() {
       toName: getAgentName(edge.target),
       amount: edge.weight,
       protocol: edge.protocol,
+      txHash: edge.txHash,
     }));
   }, [edges, agents]);
 
@@ -188,8 +190,11 @@ export default function PaymentsPage() {
             <span className="text-xs font-semibold text-muted-foreground w-[140px] shrink-0">
               Amount
             </span>
-            <span className="text-xs font-semibold text-muted-foreground flex-1">
+            <span className="text-xs font-semibold text-muted-foreground w-[120px] shrink-0">
               Protocol
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground flex-1">
+              Tx Hash
             </span>
           </div>
 
@@ -216,8 +221,22 @@ export default function PaymentsPage() {
                     <span className="text-sm font-medium text-primary w-[140px] shrink-0">
                       {formatUSDCCompact(tx.amount)} USDC
                     </span>
-                    <span className="text-xs text-muted-foreground flex-1 uppercase">
+                    <span className="text-xs text-muted-foreground w-[120px] shrink-0 uppercase">
                       {tx.protocol}
+                    </span>
+                    <span className="text-xs text-muted-foreground flex-1 truncate">
+                      {tx.txHash ? (
+                        <a
+                          href={`https://sepolia.basescan.org/tx/${tx.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {tx.txHash.slice(0, 6)}...{tx.txHash.slice(-4)}
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground/50">--</span>
+                      )}
                     </span>
                   </div>
                 ))
