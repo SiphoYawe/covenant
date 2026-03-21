@@ -55,42 +55,6 @@ Two-layer inspection architecture. All server-side, no client bypass path.
 
 Civic flags propagate to the reputation engine as high-weight negative signals (L1: -3, L2: -5). Agents caught have scores dropped and get excluded from task routing.
 
-## Agent Network
-
-28 agents across 20+ domains with distinct roles and behavioral profiles.
-
-| Category | Count | Role |
-|----------|-------|------|
-| Requesters | 7 | Hire providers for tasks (research, code review, analysis) |
-| Legitimate providers | 17 | Deliver real work, build reputation through quality outcomes |
-| Adversarial attackers | 4 | X1: prompt injection specialist. X2-X4: Sybil ring with circular payments |
-
-Each agent has: named identity, domain specialization, pricing tiers, hiring preferences, and a Claude-powered reasoning engine for negotiation and task execution.
-
-## 5-Act Demo Narrative
-
-Deterministic sequence of 211 transactions across 5 phases. Tells a story, not a feature tour.
-
-| Act | Phase | Transactions | Story |
-|-----|-------|-------------|-------|
-| 1. Registration | Setup | 3 hero agents | Researcher, code reviewer, summarizer register with Civic L1 identity checks |
-| 2. Economy Works | A+B (82 txs) | Competitive equilibrium | Agents discover each other via A2A, negotiate prices, settle USDC payments, reputation diverges by quality |
-| 3. Villain Enters | C (40 txs) | Adversarial entry | X1 builds legitimate reputation, then X2-X4 form a Sybil ring with circular payments and fake feedback |
-| 4. Consequences | D (35 txs) | Detection + exclusion | X1 delivers prompt injection, Civic L2 flags it, reputation engine detects Sybil ring, scores drop, agents excluded |
-| 5. Payoff | E (54 txs) | Mature ecosystem | Legitimate agents thrive with high scores, adversarial agents permanently blocked from task routing |
-
-## Dashboard
-
-Real-time via SSE from Vercel KV event log. Zustand state management. Sub-2s update latency. 6 pages + demo controller.
-
-| Page | Details |
-|------|---------|
-| **Home** | 6 metric cards (agents, USDC volume, avg reputation, Sybil alerts, excluded, domains), force-directed trust graph, agent detail panel, activity feed |
-| **Agents** | Searchable grid of 28 agent cards with reputation scores, status indicators, Civic verification badges, payment statistics |
-| **Trust Graph** | Full-screen force graph. Nodes sized by reputation, colored by role (#00BBFF requester, #00FF88 provider, #FF4444 adversarial). Edge labels show USDC amounts |
-| **Payments** | Transaction table with pagination, filters by agent/phase, 4 metric cards (volume, avg tx, success rate, count), BaseScan links |
-| **Civic Guards** | Inspection timeline with severity indicators, threat profiles for 4 adversarial agents, attack type badges, block status |
-| **Demo** | 5-act progress indicator, per-act status cards, auto-play with configurable delay, reset with confirmation |
 
 ## Data Architecture
 
@@ -123,15 +87,6 @@ Zero SQL. All persistence on-chain or content-addressed.
 | `/api/demo/reset` | POST | Clear all state, reset to act 0 |
 | `/api/events/stream` | GET | SSE endpoint, emits events since cursor |
 
-## Seed Engine
-
-Deterministic data generation system for reproducible demo runs. Not mocked data: structured configurations that drive real protocol interactions.
-
-- **28 agent profiles** with wallets, domains, capabilities, pricing, and behavioral configs
-- **211 interaction configs** organized across 5 phases with prerequisite chains
-- **5 phase scenarios** with trigger conditions and reputation thresholds
-- **Adversarial choreography**: X1's pivot from legitimate to malicious, X2-X4 Sybil ring formation with circular payment patterns
-- **State machine engine**: Registration, interaction dispatch, reputation computation with deterministic phase progression
 
 ## Tech Stack
 
@@ -172,23 +127,3 @@ Deterministic data generation system for reproducible demo runs. Not mocked data
 - **11 API routes** handling the full agent lifecycle
 - **Zero mocks**: every interaction is real (on-chain, IPFS, Claude API, USDC settlement)
 
-## Getting Started
-
-```bash
-# Install dependencies
-bun install
-
-# Set up environment variables (see .env.example)
-cp .env.example .env.local
-
-# Run development server
-bun dev
-
-# Run tests
-bun test
-
-# Build for production
-bun run build
-```
-
-Required environment variables: `ANTHROPIC_API_KEY`, `BASE_SEPOLIA_RPC_URL`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `PINATA_JWT`, `NEXT_PUBLIC_BASE_SCAN_URL`, and wallet private keys for 4 agents + system.
