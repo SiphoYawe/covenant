@@ -7,14 +7,19 @@ import { EVENT_TYPES } from '@/lib/events';
 
 // --- Types ---
 
+export type FilterBy = 'all' | 'top-rated' | 'flagged' | 'excluded';
+export type SortBy = 'score' | 'payment-volume' | 'domain';
+
 export type AgentState = {
   agentId: string;
   name: string;
   role: string;
+  domain?: string;
   reputationScore?: number;
   trustLevel?: string;
   civicFlagged?: boolean;
   lastUpdated: number;
+  paymentVolume?: number;
 };
 
 export type TrustEdge = {
@@ -43,6 +48,13 @@ export type DashboardState = {
   metrics: EconomicMetrics;
   demoState: DemoState;
   selectedAgentId: string | null;
+  filterBy: FilterBy;
+  sortBy: SortBy;
+  currentPage: number;
+  pageSize: number;
+  protocolFilter: string;
+  searchQuery: string;
+  paymentsPage: number;
 };
 
 export type DashboardActions = {
@@ -51,6 +63,13 @@ export type DashboardActions = {
   addEdge: (edge: TrustEdge) => void;
   updateMetrics: (partial: Partial<EconomicMetrics>) => void;
   setSelectedAgent: (agentId: string | null) => void;
+  setFilterBy: (filter: FilterBy) => void;
+  setSortBy: (sort: SortBy) => void;
+  setCurrentPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  setProtocolFilter: (protocol: string) => void;
+  setSearchQuery: (query: string) => void;
+  setPaymentsPage: (page: number) => void;
   resetDemo: () => void;
 };
 
@@ -75,6 +94,13 @@ const initialState: DashboardState = {
     status: 'idle',
   },
   selectedAgentId: null,
+  filterBy: 'all',
+  sortBy: 'score',
+  currentPage: 1,
+  pageSize: 12,
+  protocolFilter: 'all',
+  searchQuery: '',
+  paymentsPage: 1,
 };
 
 // --- Store ---
@@ -193,6 +219,34 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
 
   setSelectedAgent: (agentId: string | null) => {
     set({ selectedAgentId: agentId });
+  },
+
+  setFilterBy: (filter: FilterBy) => {
+    set({ filterBy: filter, currentPage: 1 });
+  },
+
+  setSortBy: (sort: SortBy) => {
+    set({ sortBy: sort, currentPage: 1 });
+  },
+
+  setCurrentPage: (page: number) => {
+    set({ currentPage: page });
+  },
+
+  setPageSize: (size: number) => {
+    set({ pageSize: size, currentPage: 1 });
+  },
+
+  setProtocolFilter: (protocol: string) => {
+    set({ protocolFilter: protocol });
+  },
+
+  setSearchQuery: (query: string) => {
+    set({ searchQuery: query, currentPage: 1 });
+  },
+
+  setPaymentsPage: (page: number) => {
+    set({ paymentsPage: page });
   },
 
   resetDemo: () => {

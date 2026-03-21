@@ -7,12 +7,21 @@ const SCORE_GOOD = '#00BBFF';
 const SCORE_CRITICAL = '#EF4444';
 const EDGE_DEFAULT = '#1E2A3A';
 
+// Role-based colors (AC #1)
+const ROLE_COLORS: Record<string, string> = {
+  requester: '#00BBFF',
+  provider: '#00FF88',
+  adversarial: '#FF4444',
+};
+
 // --- Node utilities ---
 
-export const getNodeColor = (score: number): string =>
-  score >= 8 ? SCORE_EXCELLENT : score >= 4 ? SCORE_GOOD : SCORE_CRITICAL;
+export const getNodeColor = (score: number, role?: string): string => {
+  if (role && ROLE_COLORS[role]) return ROLE_COLORS[role];
+  return score >= 8 ? SCORE_EXCELLENT : score >= 4 ? SCORE_GOOD : SCORE_CRITICAL;
+};
 
-export const getNodeRadius = (score: number): number => 4 + score * 2;
+export const getNodeRadius = (score: number): number => 4 + score * 1.6;
 
 // --- Edge utilities ---
 

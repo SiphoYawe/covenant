@@ -24,11 +24,17 @@ const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ),
 });
 
-export function TrustGraph() {
+type TrustGraphProps = {
+  showLabels?: boolean;
+  showEdgeLabels?: boolean;
+};
+
+export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustGraphProps) {
   const agents = useAgents();
   const edges = useEdges();
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   const graphData = useMemo(() => buildGraphData(agents, edges), [agents, edges]);
 
@@ -65,39 +71,78 @@ export function TrustGraph() {
     useDashboardStore.getState().setSelectedAgent(null);
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleNodeHover = useCallback((node: any) => {
+    setHoveredNode(node?.id ?? null);
+  }, []);
+
   const nodeCanvasObject = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (node: any, ctx: CanvasRenderingContext2D) => {
       const x = node.x ?? 0;
       const y = node.y ?? 0;
       const score = node.score ?? 5;
+      const role = node.role ?? '';
       const radius = getNodeRadius(score);
-      const color = getNodeColor(score);
+      const color = getNodeColor(score, role);
       const isSelected = node.id === selectedAgentId;
+      const isHovered = node.id === hoveredNode;
+      const pulseScale = isHovered ? 1.15 : 1;
 
-      if (isSelected) {
+      // Glow for hovered/selected nodes
+      if (isSelected || isHovered) {
         ctx.beginPath();
-        ctx.arc(x, y, radius + 3, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(0,187,255,0.3)';
+        ctx.arc(x, y, radius * pulseScale + 4, 0, 2 * Math.PI);
+        ctx.fillStyle = `${color}33`;
         ctx.fill();
-        ctx.strokeStyle = '#00BBFF';
+        ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.stroke();
       }
 
+      // Main node circle
       ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI);
+      ctx.arc(x, y, radius * pulseScale, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
 
-      ctx.font = '4px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(node.name ?? '', x, y + radius + 2);
+      // Dimming for adversarial nodes
+      if (role === 'adversarial') {
+        ctx.globalAlpha = 0.7;
+      }
+
+      // Label
+      if (showLabels) {
+        ctx.font = `${Math.max(3, radius * 0.7)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = 1;
+        ctx.fillText(node.name ?? '', x, y + radius * pulseScale + 3);
+      }
+
+      ctx.globalAlpha = 1;
     },
-    [selectedAgentId],
+    [selectedAgentId, hoveredNode, showLabels],
   );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const linkCanvasObjectMode = useCallback(() => showEdgeLabels ? 'after' as const : undefined, [showEdgeLabels]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
+    if (!showEdgeLabels) return;
+    const start = link.source;
+    const end = link.target;
+    if (!start || !end) return;
+    const midX = (start.x + end.x) / 2;
+    const midY = (start.y + end.y) / 2;
+    ctx.font = '3px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#8892A0';
+    ctx.fillText(`$${link.volume}`, midX, midY);
+  }, [showEdgeLabels]);
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[300px]">
@@ -117,10 +162,15 @@ export function TrustGraph() {
         linkColor={(link: any) => getEdgeColor(link.outcome ?? 'success')}
         linkDirectionalArrowLength={6}
         linkDirectionalArrowRelPos={0.9}
+        linkCanvasObjectMode={showEdgeLabels ? linkCanvasObjectMode : undefined}
+        linkCanvasObject={showEdgeLabels ? linkCanvasObject : undefined}
         onNodeClick={handleNodeClick}
+        onNodeHover={handleNodeHover}
         onBackgroundClick={handleBackgroundClick}
         backgroundColor="transparent"
-        cooldownTicks={50}
+        cooldownTicks={100}
+        d3AlphaDecay={0.02}
+        d3VelocityDecay={0.3}
       />
     </div>
   );

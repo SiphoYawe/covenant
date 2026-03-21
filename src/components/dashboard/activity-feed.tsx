@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useDashboardStore } from '@/stores/dashboard';
 import {
   formatEventDescription,
@@ -9,11 +9,27 @@ import {
   isCivicFlagEvent,
 } from '@/components/dashboard/feed-utils';
 
+const PROTOCOL_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'erc8004', label: 'ERC-8004' },
+  { key: 'a2a', label: 'A2A' },
+  { key: 'x402', label: 'x402' },
+  { key: 'civic', label: 'Civic' },
+  { key: 'covenant_ai', label: 'Covenant AI' },
+];
+
 export function ActivityFeed() {
   const events = useDashboardStore((s) => s.events);
+  const protocolFilter = useDashboardStore((s) => s.protocolFilter);
+  const setProtocolFilter = useDashboardStore((s) => s.setProtocolFilter);
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtTopRef = useRef(true);
   const prevLengthRef = useRef(0);
+
+  const filteredEvents = useMemo(() => {
+    if (protocolFilter === 'all') return events;
+    return events.filter((e) => e.protocol === protocolFilter);
+  }, [events, protocolFilter]);
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
@@ -31,51 +47,74 @@ export function ActivityFeed() {
     prevLengthRef.current = events.length;
   }, [events.length]);
 
-  if (events.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        Waiting for agent activity...
-      </div>
-    );
-  }
-
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className="overflow-y-auto h-full"
-    >
-      {events.map((event, idx) => {
-        const isCivic = isCivicFlagEvent(event);
-        const proto = getProtocolConfig(event.protocol);
-
-        return (
-          <div
-            key={event.id}
-            className={`flex items-start gap-3 py-3 px-4 border-b border-border text-sm transition-all ${
-              idx === 0 ? 'animate-fade-in' : ''
-            } ${
-              isCivic
-                ? 'bg-error/10 border-l-2 border-error text-error-foreground'
-                : 'hover:bg-muted'
+    <div className="flex flex-col h-full">
+      {/* Protocol filter tabs */}
+      <div className="flex gap-1 px-3 py-2 border-b border-border overflow-x-auto">
+        {PROTOCOL_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setProtocolFilter(tab.key)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors ${
+              protocolFilter === tab.key
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
           >
-            <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[60px]">
-              {formatTimestamp(event.timestamp)}
-            </span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${proto.bg} ${proto.text}`}
-            >
-              {proto.label}
-            </span>
+      {/* Events list with CSS containment for performance */}
+      {filteredEvents.length === 0 ? (
+        <div className="flex items-center justify-center flex-1 text-muted-foreground text-sm">
+          {protocolFilter === 'all'
+            ? 'Waiting for agent activity...'
+            : `No ${protocolFilter} events yet.`}
+        </div>
+      ) : (
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          className="overflow-y-auto flex-1"
+          style={{ contentVisibility: 'auto', containIntrinsicSize: '0 40px' }}
+        >
+          {filteredEvents.map((event, idx) => {
+            const isCivic = isCivicFlagEvent(event);
+            const proto = getProtocolConfig(event.protocol);
 
-            <span className="text-foreground/80 flex-1">
-              {formatEventDescription(event)}
-            </span>
-          </div>
-        );
-      })}
+            return (
+              <div
+                key={event.id}
+                className={`flex items-start gap-2 py-2.5 px-3 border-b border-border text-[12px] transition-all ${
+                  idx === 0 ? 'animate-fade-in' : ''
+                } ${
+                  isCivic
+                    ? 'bg-error/10 border-l-2 border-error'
+                    : 'hover:bg-muted'
+                }`}
+                style={{ contentVisibility: 'auto', containIntrinsicSize: '0 40px' }}
+              >
+                <span className="text-[11px] text-muted-foreground whitespace-nowrap min-w-[50px]">
+                  {formatTimestamp(event.timestamp)}
+                </span>
+
+                <span
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${proto.bg} ${proto.text}`}
+                >
+                  {proto.label}
+                </span>
+
+                <span className={`flex-1 ${isCivic ? 'text-error-foreground' : 'text-foreground/80'}`}>
+                  {formatEventDescription(event)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
