@@ -9,7 +9,7 @@ export type CardProps = {
 export function Card({ title, children, className = '' }: CardProps) {
   return (
     <div
-      className={`rounded-3xl border border-border bg-card shadow-md shadow-black/4 p-4 ${className}`}
+      className={`rounded-xl bg-card card-elevated p-5 ${className}`}
     >
       {title && (
         <h3 className="text-sm font-semibold text-foreground mb-3">{title}</h3>

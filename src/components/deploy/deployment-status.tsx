@@ -35,7 +35,7 @@ export function DeploymentStatus() {
   if (status === 'idle') return null;
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-6 animate-fade-in">
+    <div className="rounded-xl card-elevated p-6 animate-fade-in">
       <h3 className="text-sm font-semibold text-foreground mb-4">Deployment Progress</h3>
 
       {/* Steps */}
@@ -65,7 +65,7 @@ export function DeploymentStatus() {
 
       {/* Success */}
       {status === 'success' && result && (
-        <div className="mt-6 rounded-2xl border border-score-excellent/30 bg-success/10 p-4 space-y-2">
+        <div className="mt-6 rounded-xl border border-score-excellent/30 bg-success/10 p-4 space-y-2">
           <p className="text-sm font-medium text-score-excellent">Agent deployed successfully</p>
           <div className="text-sm text-muted-foreground space-y-1">
             <p>

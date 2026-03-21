@@ -53,11 +53,11 @@ export function AgentDetail() {
   return (
     <AnimatePresence mode="wait">
       {!selectedAgentId ? (
-        <div className="bg-card rounded-3xl border border-border p-6 h-full flex items-center justify-center">
+        <div className="bg-card rounded-xl card-elevated p-6 h-full flex items-center justify-center">
           <span className="text-muted-foreground text-sm">Click an agent node to see details</span>
         </div>
       ) : !agent ? (
-        <div className="bg-card rounded-3xl border border-border p-6 h-full flex items-center justify-center">
+        <div className="bg-card rounded-xl card-elevated p-6 h-full flex items-center justify-center">
           <span className="text-muted-foreground text-sm">Agent not found</span>
         </div>
       ) : (
@@ -67,11 +67,11 @@ export function AgentDetail() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 20, opacity: 0 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="bg-card rounded-3xl border border-border p-6 h-full overflow-y-auto space-y-5"
+          className="bg-card card-elevated rounded-xl p-5 h-full overflow-y-auto space-y-5"
         >
           {/* Agent header */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
               {(agent.name || selectedAgentId).charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -81,7 +81,7 @@ export function AgentDetail() {
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Badge variant={agent.civicFlagged ? 'danger' : 'default'}>{agent.role}</Badge>
                 {agent.domain && (
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${getDomainColor(agent.domain)}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getDomainColor(agent.domain)}`}>
                     {agent.domain}
                   </span>
                 )}
@@ -92,7 +92,7 @@ export function AgentDetail() {
 
           {/* Reputation score */}
           <div>
-            <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
+            <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
               Reputation Score
             </span>
             {agent.reputationScore != null ? (
@@ -101,7 +101,7 @@ export function AgentDetail() {
                   key={agent.reputationScore}
                   initial={{ scale: 1.1 }}
                   animate={{ scale: 1 }}
-                  className={`text-[28px] font-bold leading-tight ${getScoreColor(agent.reputationScore)}`}
+                  className={`text-3xl font-bold leading-none ${getScoreColor(agent.reputationScore)}`}
                 >
                   {agent.reputationScore.toFixed(1)}
                 </motion.span>
@@ -114,7 +114,7 @@ export function AgentDetail() {
 
           {/* Civic status */}
           <div>
-            <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
+            <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
               Civic Status
             </span>
             <div className="flex items-center gap-2 mt-1">
@@ -132,13 +132,13 @@ export function AgentDetail() {
           {/* Payment volume + jobs */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
+              <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
                 Payment Volume
               </span>
               <p className="text-foreground text-base font-semibold mt-1">{formatUSDC(paymentVolume)} USDC</p>
             </div>
             <div>
-              <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
+              <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
                 Connections
               </span>
               <p className="text-foreground text-base font-semibold mt-1">
@@ -150,7 +150,7 @@ export function AgentDetail() {
           {/* Payment history */}
           {agentEdges.length > 0 && (
             <div>
-              <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
+              <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
                 Payment History
               </span>
               <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
@@ -161,7 +161,7 @@ export function AgentDetail() {
                     <div key={`${edge.source}-${edge.target}-${i}`} className="flex items-center gap-2 text-xs">
                       <span className="text-muted-foreground w-16 shrink-0">{edge.weight} USDC</span>
                       <span className="text-foreground truncate flex-1">{counterName}</span>
-                      <span className="text-muted-foreground shrink-0 uppercase text-[9px]">{edge.protocol}</span>
+                      <span className="text-muted-foreground shrink-0 uppercase text-xs">{edge.protocol}</span>
                     </div>
                   );
                 })}
@@ -172,7 +172,7 @@ export function AgentDetail() {
           {/* Interaction timeline */}
           {agentEvents.length > 0 && (
             <div>
-              <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
+              <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
                 Recent Activity
               </span>
               <div className="mt-2 space-y-1.5 max-h-32 overflow-y-auto">
@@ -183,7 +183,7 @@ export function AgentDetail() {
                       <span className="text-muted-foreground w-14 shrink-0">
                         {formatTimestamp(event.timestamp)}
                       </span>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium ${proto.bg} ${proto.text}`}>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${proto.bg} ${proto.text}`}>
                         {proto.label}
                       </span>
                       <span className="text-foreground/80 truncate flex-1">
@@ -198,7 +198,7 @@ export function AgentDetail() {
 
           {/* AI explanation */}
           <div>
-            <span className="uppercase text-[11px] font-semibold text-muted-foreground tracking-widest">
+            <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
               AI Explanation
             </span>
             <p className="text-muted-foreground text-xs leading-relaxed mt-1">

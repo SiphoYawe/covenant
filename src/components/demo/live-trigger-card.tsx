@@ -37,14 +37,14 @@ export function LiveTriggerCard({
   const isSuccess = hasResult && result.success === true;
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-5 flex flex-col gap-4">
+    <div className="bg-card card-elevated rounded-xl p-5 flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-semibold text-foreground">{title}</h3>
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         </div>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full shrink-0">
+        <span className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg shrink-0">
           ~{estimatedDuration}s
         </span>
       </div>
@@ -52,12 +52,12 @@ export function LiveTriggerCard({
       {/* Steps breakdown */}
       <div className="flex flex-col gap-1.5">
         {steps.map((step) => (
-          <div key={step.name} className="flex items-center gap-2 text-xs">
-            <span className={`font-mono ${PROTOCOL_COLORS[step.protocol] ?? 'text-muted-foreground'}`}>
+          <div key={step.name} className="flex items-center gap-2 text-sm">
+            <span className={`text-xs font-mono ${PROTOCOL_COLORS[step.protocol] ?? 'text-muted-foreground'}`}>
               {step.protocol}
             </span>
-            <span className="text-foreground">{step.name}</span>
-            <span className="text-muted-foreground ml-auto">{step.duration}</span>
+            <span className="text-foreground font-medium">{step.name}</span>
+            <span className="text-xs text-muted-foreground ml-auto">{step.duration}</span>
           </div>
         ))}
       </div>
@@ -67,7 +67,7 @@ export function LiveTriggerCard({
         type="button"
         onClick={onTrigger}
         disabled={isExecuting}
-        className={`w-full rounded-xl py-3 text-sm font-medium transition-all ${
+        className={`w-full rounded-lg py-3 text-sm font-medium transition-all ${
           isExecuting
             ? 'bg-primary/20 text-primary cursor-not-allowed animate-pulse'
             : hasResult

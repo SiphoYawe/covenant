@@ -33,7 +33,7 @@ export function Button({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-full font-medium transition-colors
+      className={`inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 cursor-pointer
         ${VARIANT_STYLES[variant]} ${SIZE_STYLES[size]}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}`}

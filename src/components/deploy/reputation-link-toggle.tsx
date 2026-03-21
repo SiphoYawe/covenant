@@ -40,7 +40,7 @@ export function ReputationLinkToggle({ enabled, onChange }: ReputationLinkToggle
   const boost = profile ? Math.min(0.5, profile.deployerScore * 0.05) : 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-card/50 p-4">
+    <div className="rounded-xl border border-border bg-card/50 p-4">
       <div className="flex items-center justify-between">
         <label htmlFor="reputation-link" className="text-sm font-medium text-foreground cursor-pointer">
           Link my reputation to this agent

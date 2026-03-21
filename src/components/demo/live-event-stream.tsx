@@ -38,7 +38,7 @@ export function LiveEventStream({ events, onClear }: LiveEventStreamProps) {
 
   if (events.length === 0) {
     return (
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card card-elevated rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-foreground">Event Stream</h3>
         </div>
@@ -50,7 +50,7 @@ export function LiveEventStream({ events, onClear }: LiveEventStreamProps) {
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <div className="bg-card card-elevated rounded-xl p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-foreground">
           Event Stream
@@ -80,13 +80,13 @@ export function LiveEventStream({ events, onClear }: LiveEventStreamProps) {
               data-testid="event-entry"
               className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors"
             >
-              <span className="text-[10px] text-muted-foreground font-mono shrink-0 w-16">
+              <span className="text-xs text-muted-foreground font-mono shrink-0 w-16">
                 {formatTime(event.timestamp)}
               </span>
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${badgeClass} shrink-0`}>
+              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${badgeClass} shrink-0`}>
                 {protocol}
               </span>
-              <span className="text-xs text-foreground truncate">{step}</span>
+              <span className="text-sm text-foreground truncate">{step}</span>
             </div>
           );
         })}

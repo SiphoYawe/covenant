@@ -11,10 +11,10 @@ const UserButton = dynamic(
 
 export default function DeployPage() {
   return (
-    <div className="flex flex-col gap-6 p-8 h-full overflow-y-auto">
+    <div className="flex flex-col gap-6 p-6 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-foreground">Deploy Agent</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Deploy Agent</h1>
         <UserButton />
       </div>
 

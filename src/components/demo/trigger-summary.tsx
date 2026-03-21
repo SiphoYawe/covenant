@@ -27,7 +27,7 @@ export function TriggerSummary({ type, result }: TriggerSummaryProps) {
   const durationStr = (durationMs / 1000).toFixed(1) + 's';
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <div className="bg-card card-elevated rounded-xl p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-foreground">
@@ -69,12 +69,12 @@ function LifecycleSummary({ result }: { result: Record<string, unknown> }) {
       {/* Agents */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Requester</span>
-          <p className="text-xs text-foreground font-mono mt-0.5">{requesterId}</p>
+          <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Requester</span>
+          <p className="text-sm text-foreground font-mono mt-0.5">{requesterId}</p>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Provider</span>
-          <p className="text-xs text-foreground font-mono mt-0.5">{providerId}</p>
+          <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Provider</span>
+          <p className="text-sm text-foreground font-mono mt-0.5">{providerId}</p>
         </div>
       </div>
 
@@ -107,7 +107,7 @@ function PriceDisplay({ price }: { price: number | null }) {
   if (price === null) return null;
   return (
     <div>
-      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Agreed Price</span>
+      <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Agreed Price</span>
       <p className="text-sm text-foreground font-semibold mt-0.5">{price} USDC</p>
     </div>
   );
@@ -124,22 +124,22 @@ function SybilSummary({ result }: { result: Record<string, unknown> }) {
     <div className="space-y-3">
       {/* Ring Pattern */}
       <div>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Detected Ring</span>
-        <p className="text-xs text-foreground font-mono mt-0.5">
+        <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Detected Ring</span>
+        <p className="text-sm text-foreground font-mono mt-0.5">
           {ringMembers.join(' -> ')}{' -> '}{ringMembers[0]}
         </p>
       </div>
 
       {/* Score Drops */}
       <div>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Score Changes</span>
+        <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Score Changes</span>
         <div className="space-y-1 mt-1">
           {Object.entries(scoreDrops).map(([agentId, drop]) => (
             <div key={agentId} className="flex items-center gap-2 text-xs">
-              <span className="text-foreground font-mono w-20 truncate">{agentId}</span>
-              <span className="text-muted-foreground">{drop.before.toFixed(1)}</span>
+              <span className="text-foreground font-mono w-24 text-sm truncate">{agentId}</span>
+              <span className="text-sm text-muted-foreground">{drop.before.toFixed(1)}</span>
               <span className="text-muted-foreground">{'→'}</span>
-              <span className="text-score-critical font-semibold">{drop.after.toFixed(1)}</span>
+              <span className="text-sm text-score-critical font-semibold">{drop.after.toFixed(1)}</span>
             </div>
           ))}
         </div>
@@ -148,7 +148,7 @@ function SybilSummary({ result }: { result: Record<string, unknown> }) {
       {/* Explanation */}
       {explanation ? (
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Explanation</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">AI Explanation</span>
           <p className="text-xs text-foreground mt-0.5 leading-relaxed">{explanation}</p>
         </div>
       ) : null}
@@ -156,7 +156,7 @@ function SybilSummary({ result }: { result: Record<string, unknown> }) {
       {/* Tx Hashes */}
       {Object.keys(txHashes).length > 0 ? (
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">On-Chain Write-Back</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">On-Chain Write-Back</span>
           <div className="space-y-1 mt-1">
             {Object.entries(txHashes).map(([agentId, hash]) => (
               <div key={agentId} className="flex items-center gap-2 text-xs">

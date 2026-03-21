@@ -48,7 +48,7 @@ function NavSection({
 }) {
   return (
     <div className="mb-4">
-      <span className="block uppercase text-[12px] font-semibold text-muted-foreground tracking-widest px-4 mb-2">
+      <span className="block uppercase text-xs font-medium text-muted-foreground/60 tracking-wider px-4 mb-1.5">
         {label}
       </span>
       <nav className="flex flex-col gap-1">
@@ -59,11 +59,11 @@ function NavSection({
               key={item.href}
               href={item.href}
               className={`
-                flex items-center gap-2 rounded-3xl px-6 py-3 text-sm font-medium transition-colors
+                flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-150
                 ${
                   isActive
-                    ? 'bg-sidebar-accent text-white'
-                    : 'text-sidebar-foreground hover:text-white hover:bg-sidebar-accent'
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground hover:text-foreground hover:bg-white/[0.04]'
                 }
               `}
             >
@@ -85,7 +85,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex flex-col w-64 shrink-0 bg-sidebar border-r border-sidebar-border rounded-3xl overflow-hidden">
+    <aside className="flex flex-col w-60 shrink-0 bg-sidebar border-r border-sidebar-border overflow-hidden">
       {/* Header: Logo */}
       <div className="p-6">
         <Image
@@ -117,8 +117,8 @@ export function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-sidebar-border">
-        <span className="text-xs text-muted-foreground">Covenant v1</span>
+      <div className="px-4 py-3 border-t border-sidebar-border">
+        <span className="text-xs text-muted-foreground/50">Covenant v1.0</span>
       </div>
     </aside>
   );

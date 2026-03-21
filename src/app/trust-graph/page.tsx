@@ -23,7 +23,7 @@ export default function TrustGraphPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-semibold text-foreground">Trust Graph</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Trust Graph</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {agentCount} agents, force-directed layout
             </p>
@@ -32,7 +32,7 @@ export default function TrustGraphPage() {
             <button
               type="button"
               onClick={() => setShowEdgeLabels(!showEdgeLabels)}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-full border border-border transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium text-secondary-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg transition-all duration-150"
             >
               <HugeiconsIcon icon={showEdgeLabels ? ViewOffIcon : ViewIcon} size={14} />
               {showEdgeLabels ? 'Hide amounts' : 'Show amounts'}
@@ -40,7 +40,7 @@ export default function TrustGraphPage() {
             <button
               type="button"
               onClick={() => setShowLegend(!showLegend)}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-full border border-border transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium text-secondary-foreground bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg transition-all duration-150"
             >
               <HugeiconsIcon icon={InformationCircleIcon} size={14} />
               Legend
@@ -51,7 +51,7 @@ export default function TrustGraphPage() {
         {/* Full-screen graph with optional panels */}
         <div className="flex gap-5 flex-1 min-h-0">
           {/* Graph container */}
-          <div className="flex-1 bg-card rounded-3xl border border-border overflow-hidden min-h-0 relative">
+          <div className="flex-1 bg-card card-elevated rounded-xl overflow-hidden min-h-0 relative">
             <div className="absolute inset-0">
               <TrustGraph showLabels showEdgeLabels={showEdgeLabels} />
             </div>
@@ -63,31 +63,31 @@ export default function TrustGraphPage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-4 left-4 bg-card/90 backdrop-blur-sm border border-border rounded-2xl p-4 space-y-3 pointer-events-auto"
+                  className="absolute top-4 left-4 overlay-elevated rounded-xl p-4 space-y-3 pointer-events-auto"
                 >
                   <h3 className="text-xs font-semibold text-foreground uppercase tracking-widest">Legend</h3>
 
                   <div className="space-y-2">
-                    <p className="text-[12px] font-medium text-muted-foreground">Node Colors (by role)</p>
+                    <p className="text-xs font-medium text-muted-foreground">Node Colors (by role)</p>
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00BBFF' }} />
-                      <span className="text-xs text-foreground">Requester</span>
+                      <span className="w-3 h-3 rounded-full bg-primary" />
+                      <span className="text-sm text-foreground">Requester</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00FF88' }} />
-                      <span className="text-xs text-foreground">Provider</span>
+                      <span className="w-3 h-3 rounded-full bg-score-excellent" />
+                      <span className="text-sm text-foreground">Provider</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FF4444' }} />
-                      <span className="text-xs text-foreground">Adversarial</span>
+                      <span className="w-3 h-3 rounded-full bg-score-critical" />
+                      <span className="text-sm text-foreground">Adversarial</span>
                     </div>
                   </div>
 
                   <div className="space-y-1.5 pt-1 border-t border-border">
-                    <p className="text-[12px] font-medium text-muted-foreground">Visual Encoding</p>
-                    <p className="text-[12px] text-foreground">Node size = reputation score</p>
-                    <p className="text-[12px] text-foreground">Edge thickness = USDC volume</p>
-                    <p className="text-[12px] text-foreground">Arrow direction = payment flow</p>
+                    <p className="text-xs font-medium text-muted-foreground">Visual Encoding</p>
+                    <p className="text-xs text-foreground">Node size = reputation score</p>
+                    <p className="text-xs text-foreground">Edge thickness = USDC volume</p>
+                    <p className="text-xs text-foreground">Arrow direction = payment flow</p>
                   </div>
                 </motion.div>
               )}
@@ -95,10 +95,10 @@ export default function TrustGraphPage() {
 
             {/* Cluster info */}
             <div className="absolute bottom-4 left-4 flex gap-2">
-              <div className="bg-card/80 backdrop-blur-sm border border-border rounded-full px-3 py-1 text-[12px] text-muted-foreground">
+              <div className="overlay-elevated rounded-lg px-3 py-1.5 text-xs text-muted-foreground">
                 Legitimate cluster: center
               </div>
-              <div className="bg-card/80 backdrop-blur-sm border border-border rounded-full px-3 py-1 text-[12px] text-score-critical">
+              <div className="overlay-elevated rounded-lg px-3 py-1.5 text-xs text-score-critical">
                 Adversarial: periphery
               </div>
             </div>

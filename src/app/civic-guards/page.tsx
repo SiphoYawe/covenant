@@ -145,7 +145,7 @@ export default function CivicGuardsPage() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 p-8 h-full min-h-0">
+      <div className="flex flex-col gap-6 p-6 h-full min-h-0">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -154,7 +154,7 @@ export default function CivicGuardsPage() {
               size={28}
               className="text-primary"
             />
-            <h1 className="text-3xl font-semibold text-foreground">
+            <h1 className="text-2xl font-semibold text-foreground">
               Civic Guards
             </h1>
           </div>
@@ -193,7 +193,7 @@ export default function CivicGuardsPage() {
         </div>
 
         {/* Full-width Inspection Timeline */}
-        <div className="flex-1 bg-card rounded-3xl border border-border overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 bg-card card-elevated rounded-xl overflow-hidden flex flex-col min-h-0">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h2 className="text-base font-semibold text-foreground">
               Inspection Timeline
@@ -205,7 +205,7 @@ export default function CivicGuardsPage() {
 
           <div className="flex-1 overflow-y-auto">
             {inspections.length === 0 ? (
-              <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+              <div className="flex items-center justify-center h-40 text-muted-foreground text-base">
                 No Civic inspections yet. Run the seed engine or trigger a live demo to generate real inspections.
               </div>
             ) : (
@@ -255,15 +255,13 @@ function StatCard({
   bgColor: string;
 }) {
   return (
-    <div className="bg-card rounded-3xl border border-border p-5 flex items-center gap-4">
-      <div
-        className={`w-10 h-10 rounded-2xl ${bgColor} flex items-center justify-center shrink-0`}
-      >
+    <div className="bg-card card-elevated rounded-xl p-5 flex items-center gap-4">
+      <div className={`w-10 h-10 rounded-lg ${bgColor} flex items-center justify-center shrink-0`}>
         <HugeiconsIcon icon={icon} size={20} className={iconColor} />
       </div>
       <div>
-        <p className="text-3xl font-bold text-foreground">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-bold text-foreground mt-0.5">{value}</p>
       </div>
     </div>
   );
@@ -315,7 +313,7 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
           size={16}
           className={`shrink-0 ${resultColor}`}
         />
-        <span className="text-[14px] font-medium text-foreground w-32 shrink-0 truncate">
+        <span className="text-sm font-semibold text-foreground w-32 shrink-0 truncate">
           {entry.agentName}
         </span>
         {entry.layer === 'L1' ? (
@@ -328,7 +326,7 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
           </Badge>
         )}
         <span
-          className={`flex-1 text-[14px] ${
+          className={`flex-1 text-sm ${
             entry.severity === 'critical'
               ? 'text-score-critical'
               : entry.severity === 'warning'
@@ -338,7 +336,7 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
         >
           {entry.description}
         </span>
-        <span className="text-sm text-muted-foreground shrink-0">
+        <span className="text-xs text-muted-foreground shrink-0">
           {formatTimestamp(entry.timestamp)}
         </span>
         <span className={`text-muted-foreground text-xs shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`}>
@@ -349,26 +347,26 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
         <div className="px-5 pb-4 pt-1 ml-8 space-y-2 animate-fade-in">
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Agent</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Agent</span>
               <p className="text-foreground font-medium mt-0.5">{entry.agentName}</p>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Layer</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Layer</span>
               <p className="text-foreground font-medium mt-0.5">{entry.layer === 'L1' ? 'Identity (L1)' : 'Behavioral (L2)'}</p>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Severity</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Severity</span>
               <p className={`font-medium mt-0.5 ${
                 entry.severity === 'critical' ? 'text-score-critical' : entry.severity === 'warning' ? 'text-score-moderate' : 'text-score-excellent'
               }`}>{entry.severity}</p>
             </div>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Details</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Details</span>
             <p className="text-sm text-foreground mt-0.5">{entry.description}</p>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Agent ID</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Agent ID</span>
             <p className="text-sm text-foreground font-mono mt-0.5">{entry.agentId}</p>
           </div>
         </div>
@@ -389,7 +387,7 @@ function FlaggedAgentCard({
   reputationScore?: number;
 }) {
   return (
-    <div className="bg-card rounded-3xl border border-score-critical/30 p-5 flex flex-col gap-3">
+    <div className="bg-card rounded-xl border border-score-critical/30 p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <HugeiconsIcon
@@ -397,7 +395,7 @@ function FlaggedAgentCard({
             size={18}
             className="text-score-critical"
           />
-          <span className="text-[15px] font-semibold text-foreground">
+          <span className="text-base font-semibold text-foreground">
             {name}
           </span>
         </div>

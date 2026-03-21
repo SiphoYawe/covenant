@@ -56,7 +56,7 @@ export function ActivityFeed() {
             key={tab.key}
             type="button"
             onClick={() => setProtocolFilter(tab.key)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
               protocolFilter === tab.key
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -88,7 +88,7 @@ export function ActivityFeed() {
             return (
               <div
                 key={event.id}
-                className={`flex items-start gap-2 py-2.5 px-3 border-b border-border text-[12px] transition-all ${
+                className={`flex items-start gap-2 py-2.5 px-3 border-b border-border text-xs transition-all ${
                   idx === 0 ? 'animate-fade-in' : ''
                 } ${
                   isCivic
@@ -97,12 +97,12 @@ export function ActivityFeed() {
                 }`}
                 style={{ contentVisibility: 'auto', containIntrinsicSize: '0 40px' }}
               >
-                <span className="text-[11px] text-muted-foreground whitespace-nowrap min-w-[50px]">
+                <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[50px]">
                   {formatTimestamp(event.timestamp)}
                 </span>
 
                 <span
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap ${proto.bg} ${proto.text}`}
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${proto.bg} ${proto.text}`}
                 >
                   {proto.label}
                 </span>

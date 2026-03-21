@@ -19,7 +19,7 @@ export type BadgeProps = {
 export function Badge({ variant = 'default', children, className = '' }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium ${VARIANT_STYLES[variant]} ${className}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium leading-none ${VARIANT_STYLES[variant]} ${className}`}
     >
       {children}
     </span>

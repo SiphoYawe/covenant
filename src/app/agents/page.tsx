@@ -83,13 +83,13 @@ function AgentCard({ agent }: { agent: AgentState }) {
     <button
       type="button"
       onClick={() => setSelected(agent.agentId)}
-      className="bg-card border border-border rounded-3xl p-5 hover:border-primary/50 hover:bg-card/80 transition-all duration-200 text-left flex flex-col gap-4 group"
+      className="bg-card card-elevated rounded-xl p-5 hover:ring-1 hover:ring-primary/30 transition-all duration-150 text-left flex flex-col gap-3 group cursor-pointer"
     >
       {/* Top row: avatar, name, status */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
+            className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 ${
               status === 'excluded'
                 ? 'bg-red-500/20 text-red-400'
                 : 'bg-primary/20 text-primary'
@@ -99,7 +99,7 @@ function AgentCard({ agent }: { agent: AgentState }) {
           </div>
           <div className="flex flex-col min-w-0">
             <span
-              className={`text-sm font-semibold truncate ${
+              className={`text-base font-semibold truncate ${
                 status === 'excluded' ? 'text-score-critical' : 'text-foreground'
               }`}
             >
@@ -193,11 +193,11 @@ export default function AgentsPage() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 p-8 h-full">
+      <div className="flex flex-col gap-6 p-6 h-full">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold text-foreground">
+            <h1 className="text-2xl font-semibold text-foreground">
               Registered Agents
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -226,7 +226,7 @@ export default function AgentsPage() {
               placeholder="Search by name or domain..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
             />
             {searchQuery && (
               <button
@@ -234,7 +234,7 @@ export default function AgentsPage() {
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <HugeiconsIcon icon={CancelCircleIcon} size={16} />
+                <HugeiconsIcon icon={CancelCircleIcon} size={18} />
               </button>
             )}
           </div>
@@ -244,8 +244,8 @@ export default function AgentsPage() {
         <div className="flex-1 overflow-y-auto min-h-0">
           {filteredAgents.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-60 text-muted-foreground">
-              <HugeiconsIcon icon={Search01Icon} size={40} className="mb-3 opacity-40" />
-              <p className="text-sm">
+              <HugeiconsIcon icon={Search01Icon} size={32} className="mb-4 opacity-30" />
+              <p className="text-base">
                 {searchQuery.trim()
                   ? 'No agents match your search. Try a different query.'
                   : 'No agents registered yet. Run the demo to populate.'}

@@ -31,10 +31,10 @@ type MetricCardProps = {
 
 function MetricCard({ label, value, icon, iconColor, trend, trendColor }: MetricCardProps) {
   return (
-    <div className="flex-1 bg-card rounded-3xl border border-border p-4 min-w-[140px]">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="bg-card card-elevated rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-3">
         <HugeiconsIcon icon={icon} size={16} className={iconColor ?? 'text-primary'} />
-        <span className="text-muted-foreground text-[13px] font-medium">{label}</span>
+        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{label}</span>
       </div>
       <motion.div
         key={String(value)}
@@ -43,9 +43,9 @@ function MetricCard({ label, value, icon, iconColor, trend, trendColor }: Metric
         transition={{ duration: 0.3 }}
         className="flex items-baseline gap-2"
       >
-        <span className="text-foreground text-[26px] font-bold leading-tight">{value}</span>
+        <span className="text-foreground text-2xl font-bold">{value}</span>
         {trend && (
-          <span className={`text-[13px] ${trendColor ?? 'text-score-excellent'}`}>{trend}</span>
+          <span className={`text-xs font-medium ${trendColor ?? 'text-score-excellent'}`}>{trend}</span>
         )}
       </motion.div>
     </div>
@@ -82,12 +82,12 @@ export default function Home() {
       <div className="flex flex-col gap-5 p-6 h-full">
         {/* Header row */}
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-semibold text-foreground">AI Reputation Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-foreground">AI Reputation Dashboard</h1>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setShowFeed(!showFeed)}
-              className="text-muted-foreground hover:text-foreground text-sm px-3 py-1.5 rounded-full border border-border transition-colors"
+              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-150"
             >
               {showFeed ? 'Hide Feed' : 'Activity Feed'}
             </button>
@@ -113,7 +113,7 @@ export default function Home() {
         </div>
 
         {/* Metrics row - 6 metrics */}
-        <div className="flex gap-3 flex-wrap">
+        <div className="grid grid-cols-4 gap-4">
           <MetricCard
             label="Total Agents"
             value={agentValues.length}
@@ -146,21 +146,21 @@ export default function Home() {
         {/* Content area */}
         <div className="flex gap-5 flex-1 min-h-0">
           {/* Trust Graph panel */}
-          <div className="flex-[3] bg-card rounded-3xl border border-border flex flex-col overflow-hidden min-w-0">
-            <div className="p-4 flex justify-between items-center border-b border-border">
-              <h2 className="text-base font-semibold text-foreground">Trust Graph</h2>
+          <div className="flex-[3] bg-card card-elevated rounded-xl flex flex-col overflow-hidden min-w-0">
+            <div className="px-5 py-3 flex justify-between items-center border-b border-border">
+              <h2 className="text-sm font-semibold text-foreground">Trust Graph</h2>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00BBFF' }} />
-                  <span className="text-[12px] text-muted-foreground">Requester</span>
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">Requester</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00FF88' }} />
-                  <span className="text-[12px] text-muted-foreground">Provider</span>
+                  <span className="w-2 h-2 rounded-full bg-score-excellent" />
+                  <span className="text-xs text-muted-foreground">Provider</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FF4444' }} />
-                  <span className="text-[12px] text-muted-foreground">Adversarial</span>
+                  <span className="w-2 h-2 rounded-full bg-score-critical" />
+                  <span className="text-xs text-muted-foreground">Adversarial</span>
                 </div>
               </div>
             </div>
@@ -179,10 +179,10 @@ export default function Home() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 300, opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="bg-card rounded-3xl border border-border overflow-hidden"
+                className="bg-card card-elevated rounded-xl overflow-hidden"
               >
-                <div className="p-3 border-b border-border">
-                  <h3 className="text-sm font-semibold text-foreground">Activity Feed</h3>
+                <div className="px-5 py-3 border-b border-border">
+                  <h3 className="text-sm font-medium text-foreground">Activity Feed</h3>
                 </div>
                 <div className="h-[260px]">
                   <ActivityFeed />

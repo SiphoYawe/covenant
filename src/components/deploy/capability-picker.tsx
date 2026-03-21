@@ -43,7 +43,7 @@ export function CapabilityPicker({ selected, onChange }: CapabilityPickerProps) 
               type="button"
               onClick={() => toggle(cap)}
               disabled={isDisabled}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 isSelected
                   ? 'bg-primary text-primary-foreground'
                   : 'border border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'

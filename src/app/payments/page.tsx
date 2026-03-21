@@ -33,10 +33,10 @@ type MetricCardProps = {
 
 function MetricCard({ label, value, valueColor }: MetricCardProps) {
   return (
-    <div className="flex-1 bg-card rounded-3xl border border-border p-5">
-      <span className="text-muted-foreground text-[13px] font-medium">{label}</span>
-      <div className="mt-1">
-        <span className={`text-[26px] font-bold leading-tight ${valueColor ?? 'text-foreground'}`}>
+    <div className="flex-1 bg-card card-elevated rounded-xl p-5">
+      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{label}</span>
+      <div className="mt-2">
+        <span className={`text-2xl font-bold ${valueColor ?? 'text-foreground'}`}>
           {value}
         </span>
       </div>
@@ -114,10 +114,10 @@ export default function PaymentsPage() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 p-8 h-full">
+      <div className="flex flex-col gap-6 p-6 h-full">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-semibold text-foreground">
+          <h1 className="text-2xl font-semibold text-foreground">
             Payment History (x402)
           </h1>
         </div>
@@ -161,7 +161,7 @@ export default function PaymentsPage() {
               id="agent-filter"
               value={agentFilter}
               onChange={(e) => handleAgentFilter(e.target.value)}
-              className="bg-card border border-border rounded-xl px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
             >
               <option value="all">All Agents</option>
               {agentOptions.map(([id, name]) => (
@@ -174,22 +174,22 @@ export default function PaymentsPage() {
         </div>
 
         {/* Transaction Table */}
-        <div className="flex-1 bg-card rounded-3xl border border-border overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 bg-card card-elevated rounded-xl overflow-hidden flex flex-col min-h-0">
           {/* Table Header */}
           <div className="flex items-center px-5 py-3 border-b border-border">
-            <span className="text-xs font-semibold text-muted-foreground w-[200px] shrink-0">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-[200px] shrink-0">
               From
             </span>
-            <span className="text-xs font-semibold text-muted-foreground w-[200px] shrink-0">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-[200px] shrink-0">
               To
             </span>
-            <span className="text-xs font-semibold text-muted-foreground w-[140px] shrink-0">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-[140px] shrink-0">
               Amount
             </span>
-            <span className="text-xs font-semibold text-muted-foreground w-[120px] shrink-0">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-[120px] shrink-0">
               Protocol
             </span>
-            <span className="text-xs font-semibold text-muted-foreground flex-1">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-1">
               Tx Hash
             </span>
           </div>
@@ -206,12 +206,12 @@ export default function PaymentsPage() {
               paginated.items.map((tx) => (
                   <div
                     key={tx.id}
-                    className="flex items-center px-5 py-3.5 border-b border-border transition-colors"
+                    className="flex items-center px-5 py-3.5 border-b border-border hover:bg-white/[0.02] transition-colors"
                   >
-                    <span className="text-sm text-foreground w-[200px] shrink-0 truncate">
+                    <span className="text-sm font-medium text-foreground w-[200px] shrink-0 truncate">
                       {tx.fromName}
                     </span>
-                    <span className="text-sm text-foreground w-[200px] shrink-0 truncate">
+                    <span className="text-sm font-medium text-foreground w-[200px] shrink-0 truncate">
                       {tx.toName}
                     </span>
                     <span className="text-sm font-medium text-primary w-[140px] shrink-0">
@@ -231,7 +231,7 @@ export default function PaymentsPage() {
                           {tx.txHash.slice(0, 6)}...{tx.txHash.slice(-4)}
                         </a>
                       ) : (
-                        <span className="text-muted-foreground/50">--</span>
+                        <span className="text-muted-foreground/70">--</span>
                       )}
                     </span>
                   </div>
@@ -251,7 +251,7 @@ export default function PaymentsPage() {
                 <button
                   onClick={() => setPaymentsPage(Math.max(1, paymentsPage - 1))}
                   disabled={paymentsPage <= 1}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-secondary text-foreground hover:bg-secondary/80"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-secondary text-foreground hover:bg-secondary/80"
                 >
                   <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
                   Prev
@@ -268,7 +268,7 @@ export default function PaymentsPage() {
                     )
                   }
                   disabled={paymentsPage >= paginated.totalPages}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-secondary text-foreground hover:bg-secondary/80"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-secondary text-foreground hover:bg-secondary/80"
                 >
                   Next
                   <HugeiconsIcon icon={ArrowRight01Icon} size={16} />

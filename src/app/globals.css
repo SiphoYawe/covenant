@@ -56,29 +56,29 @@
 .dark,
 [data-theme="dark"] {
   --background: #000000;
-  --foreground: #FFFFFF;
-  --card: #0D1117;
-  --card-foreground: #FFFFFF;
+  --foreground: #F1F5F9;
+  --card: #0A0F16;
+  --card-foreground: #F1F5F9;
   --primary: #00BBFF;
   --primary-foreground: #000000;
   --secondary: #1A2030;
-  --secondary-foreground: #FFFFFF;
+  --secondary-foreground: #F1F5F9;
   --accent: #0D1117;
   --accent-foreground: #E8F4FD;
   --muted: #111820;
-  --muted-foreground: #8892A0;
-  --border: #1E2A3A;
-  --input: #1E2A3A;
+  --muted-foreground: #94A3B8;
+  --border: #1E293B;
+  --input: #1E293B;
   --ring: #00BBFF;
   --destructive: #CC3314;
   --destructive-foreground: #FFFFFF;
-  --sidebar: #080C12;
-  --sidebar-foreground: #8892A0;
+  --sidebar: #060A10;
+  --sidebar-foreground: #94A3B8;
   --sidebar-primary: #00BBFF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #0D1822;
-  --sidebar-accent-foreground: #E8F4FD;
-  --sidebar-border: #1E2A3A;
+  --sidebar-accent: #111827;
+  --sidebar-accent-foreground: #F1F5F9;
+  --sidebar-border: #1E293B;
 
   /* Semantic dark */
   --success: #3B4748;
@@ -136,29 +136,29 @@
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not([data-theme="light"]) {
     --background: #000000;
-    --foreground: #FFFFFF;
-    --card: #0D1117;
-    --card-foreground: #FFFFFF;
+    --foreground: #F1F5F9;
+    --card: #0A0F16;
+    --card-foreground: #F1F5F9;
     --primary: #00BBFF;
     --primary-foreground: #000000;
     --secondary: #1A2030;
-    --secondary-foreground: #FFFFFF;
+    --secondary-foreground: #F1F5F9;
     --accent: #0D1117;
     --accent-foreground: #E8F4FD;
     --muted: #111820;
-    --muted-foreground: #8892A0;
-    --border: #1E2A3A;
-    --input: #1E2A3A;
+    --muted-foreground: #94A3B8;
+    --border: #1E293B;
+    --input: #1E293B;
     --ring: #00BBFF;
     --destructive: #CC3314;
     --destructive-foreground: #FFFFFF;
-    --sidebar: #080C12;
-    --sidebar-foreground: #8892A0;
+    --sidebar: #060A10;
+    --sidebar-foreground: #94A3B8;
     --sidebar-primary: #00BBFF;
     --sidebar-primary-foreground: #FFFFFF;
-    --sidebar-accent: #0D1822;
-    --sidebar-accent-foreground: #E8F4FD;
-    --sidebar-border: #1E2A3A;
+    --sidebar-accent: #111827;
+    --sidebar-accent-foreground: #F1F5F9;
+    --sidebar-border: #1E293B;
     --success: #3B4748;
     --success-foreground: #A1E5A1;
     --warning: #53484F;
@@ -175,7 +175,50 @@ body {
   color: var(--foreground);
   font-family: var(--font-red-hat), system-ui, sans-serif;
   font-size: 16px;
-  font-weight: 450;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Depth system for dark mode */
+.card-elevated {
+  background: var(--card);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.card-elevated:hover {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.overlay-elevated {
+  background: var(--card);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+/* Dark scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
 }
 
 @keyframes fade-in {

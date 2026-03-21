@@ -29,13 +29,13 @@ export function DeployForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Mode Tabs */}
-      <div className="flex gap-1 rounded-full bg-secondary p-1">
+      <div className="flex gap-1 rounded-lg bg-secondary p-1">
         {MODE_TABS.map((tab) => (
           <button
             key={tab.value}
             type="button"
             onClick={() => setMode(tab.value)}
-            className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               mode === tab.value
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground'
@@ -48,7 +48,7 @@ export function DeployForm() {
 
       {/* Name */}
       <div>
-        <label htmlFor="agent-name" className="block text-sm font-medium text-foreground mb-1.5">
+        <label htmlFor="agent-name" className="block text-sm font-medium text-muted-foreground mb-1.5">
           Agent Name
         </label>
         <input
@@ -60,14 +60,14 @@ export function DeployForm() {
           minLength={3}
           maxLength={50}
           required
-          className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <span className="text-xs text-muted-foreground mt-1 block">{formData.name.length}/50</span>
       </div>
 
       {/* Description */}
       <div>
-        <label htmlFor="agent-description" className="block text-sm font-medium text-foreground mb-1.5">
+        <label htmlFor="agent-description" className="block text-sm font-medium text-muted-foreground mb-1.5">
           Description
         </label>
         <textarea
@@ -79,7 +79,7 @@ export function DeployForm() {
           maxLength={500}
           required
           rows={3}
-          className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+          className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
         />
         <span className="text-xs text-muted-foreground mt-1 block">{formData.description.length}/500</span>
       </div>
@@ -93,7 +93,7 @@ export function DeployForm() {
       {/* System Prompt (provisioned only) */}
       {mode === 'provisioned' && (
         <div>
-          <label htmlFor="system-prompt" className="block text-sm font-medium text-foreground mb-1.5">
+          <label htmlFor="system-prompt" className="block text-sm font-medium text-muted-foreground mb-1.5">
             System Prompt
           </label>
           <textarea
@@ -103,7 +103,7 @@ export function DeployForm() {
             placeholder="Optional system prompt for your agent..."
             maxLength={2000}
             rows={4}
-            className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+            className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
           />
           <span className="text-xs text-muted-foreground mt-1 block">{formData.systemPrompt.length}/2000</span>
         </div>
@@ -112,7 +112,7 @@ export function DeployForm() {
       {/* Wallet Address (BYOW only) */}
       {mode === 'byow' && (
         <div>
-          <label htmlFor="wallet-address" className="block text-sm font-medium text-foreground mb-1.5">
+          <label htmlFor="wallet-address" className="block text-sm font-medium text-muted-foreground mb-1.5">
             Wallet Address
           </label>
           <input
@@ -123,7 +123,7 @@ export function DeployForm() {
             placeholder="0x..."
             pattern="^0x[0-9a-fA-F]{40}$"
             required
-            className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground font-mono placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground font-mono placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
       )}
