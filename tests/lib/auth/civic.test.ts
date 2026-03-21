@@ -161,16 +161,11 @@ describe('Middleware matcher', () => {
     const deployPaths = ['/deploy', '/deploy/new', '/deploy/agent/123'];
     const publicPaths = ['/', '/api/agents/list', '/api/events/stream', '/api/payments/history', '/trust-graph', '/payments'];
 
-    // The matcher pattern: /deploy and /deploy/:path*
-    const matchers = ['/deploy', '/deploy/:path*'];
-
-    // Verify deploy paths would match
     for (const path of deployPaths) {
       const matches = path === '/deploy' || path.startsWith('/deploy/');
       expect(matches).toBe(true);
     }
 
-    // Verify public paths would NOT match
     for (const path of publicPaths) {
       const matches = path === '/deploy' || path.startsWith('/deploy/');
       expect(matches).toBe(false);
