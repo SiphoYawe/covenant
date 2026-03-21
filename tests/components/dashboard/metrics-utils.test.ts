@@ -59,9 +59,9 @@ describe('metrics-utils', () => {
 
     it('handles zero transactions gracefully', () => {
       const score = computeHealthScore(baseMetrics, {}, 0);
-      // successRate = 0, avgRep = 5 (default), sybil = 0
-      // 0 + (5/10)*40 + 20 = 0 + 20 + 20 = 40
-      expect(score).toBe(40);
+      // successRate = 0, avgRep = 0 (no scored agents), sybil = 0
+      // 0 + (0/10)*40 + 20 = 0 + 0 + 20 = 20
+      expect(score).toBe(20);
     });
 
     it('clamps score to 0-100 range', () => {

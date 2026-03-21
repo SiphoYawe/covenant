@@ -62,6 +62,8 @@ const useDashboardStoreMock = Object.assign(
 vi.mock('@/stores/dashboard', () => ({
   useDemoState: () => ({ status: 'idle' }),
   useEvents: () => [],
+  useAgents: () => ({}),
+  useMetrics: () => ({ totalPayments: 0, totalTransactions: 0, averagePayment: 0, totalFeedback: 0 }),
   useDashboardStore: useDashboardStoreMock,
 }));
 
@@ -71,6 +73,10 @@ vi.mock('zustand/react/shallow', () => ({
 
 vi.mock('@/components/dashboard/seed-data-provider', () => ({
   SeedDataProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock('@/components/layout/app-layout', () => ({
+  AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 describe('Demo Page', () => {
@@ -95,7 +101,7 @@ describe('Demo Page', () => {
     render(<DemoPage />);
 
     expect(screen.getAllByText('Agents').length).toBeGreaterThan(0);
-    expect(screen.getByText('0')).toBeDefined(); // No agents in empty mock store
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0); // No agents in empty mock store
     expect(screen.getAllByText('Transactions').length).toBeGreaterThan(0);
   });
 

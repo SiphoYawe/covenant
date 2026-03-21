@@ -39,6 +39,9 @@ export const EVENT_TYPES = {
   LIVE_TRIGGER_COMPLETED: 'live:trigger-completed',
   LIVE_TRIGGER_FAILED: 'live:trigger-failed',
   AGENT_DEPLOYED: 'agent:deployed',
+  AGENT_DEPLOYED_HUMAN: 'agent:deployed-human',
+  DEPLOYER_REPUTATION_LINKED: 'deployer:reputation-linked',
+  DEPLOYER_SCORE_UPDATED: 'deployer:score-updated',
 } as const;
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];

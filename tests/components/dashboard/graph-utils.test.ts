@@ -114,7 +114,7 @@ describe('graph-utils', () => {
       };
 
       const result = buildGraphData(agents, []);
-      expect(result.nodes[0].score).toBe(5);
+      expect(result.nodes[0].score).toBe(0);
     });
 
     it('uses truncated agentId when name is empty', () => {
