@@ -62,6 +62,7 @@ export type DashboardActions = {
   updateAgent: (agentId: string, update: Partial<Omit<AgentState, 'agentId'>>) => void;
   addEdge: (edge: TrustEdge) => void;
   updateMetrics: (partial: Partial<EconomicMetrics>) => void;
+  loadInitialState: () => Promise<void>;
   setSelectedAgent: (agentId: string | null) => void;
   setFilterBy: (filter: FilterBy) => void;
   setSortBy: (sort: SortBy) => void;
@@ -265,6 +266,21 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
     set((state) => ({
       metrics: { ...state.metrics, ...partial },
     }));
+  },
+
+  loadInitialState: async () => {
+    try {
+      const res = await fetch('/api/dashboard');
+      if (!res.ok) return;
+      const data = await res.json();
+      set({
+        agents: data.agents ?? {},
+        edges: data.edges ?? [],
+        metrics: data.metrics ?? initialState.metrics,
+      });
+    } catch {
+      // API failed, dashboard stays empty until SSE populates
+    }
   },
 
   setSelectedAgent: (agentId: string | null) => {

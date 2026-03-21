@@ -1,11 +1,22 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import { useDashboardStore } from '@/stores/dashboard';
+
 /**
- * SeedDataProvider is a passthrough. The dashboard store is populated
- * exclusively from real backend data delivered via SSE (/api/events/stream).
- * Use the "Re-seed" button on the demo page to seed the backend, which
- * will emit real events that flow into the store.
+ * Loads the full computed dashboard state from /api/dashboard on mount.
+ * SSE (/api/events/stream) then handles incremental updates on top.
  */
 export function SeedDataProvider({ children }: { children: React.ReactNode }) {
+  const loaded = useRef(false);
+  const loadInitialState = useDashboardStore((s) => s.loadInitialState);
+
+  useEffect(() => {
+    if (!loaded.current) {
+      loaded.current = true;
+      loadInitialState();
+    }
+  }, [loadInitialState]);
+
   return <>{children}</>;
 }
