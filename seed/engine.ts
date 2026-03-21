@@ -14,18 +14,35 @@ import { engineStateSchema } from './types';
 import { AGENT_ROSTER } from './agents';
 import { SEED_SCENARIO, getPhaseConfig } from './scenarios';
 import { profileToMetadata } from './metadata';
-import { getPhaseInteractions } from './interactions';
+import { getPhaseInteractions, getInteractionById } from './interactions';
 
 // Protocol imports
 import { getSDK } from '@/lib/protocols/erc8004/client';
 import { giveFeedback } from '@/lib/protocols/erc8004/reputation';
+import { appendReputationResponse } from '@/lib/protocols/erc8004/write-back';
 import { executePayment } from '@/lib/protocols/x402/client';
 import { negotiatePrice } from '@/lib/orchestrator/negotiation';
 import { inspectIdentityMetadata } from '@/lib/civic/identity-inspector';
+import { getCivicGateway } from '@/lib/civic/gateway';
+import { handleThreat, getFlags } from '@/lib/civic/threat-handler';
+import { getCivicPenalty } from '@/lib/civic/reputation-bridge';
 import { triggerReputationPipeline } from '@/lib/reputation/engine';
+import { computeStakeWeights } from '@/lib/reputation/stake-weighting';
+import { buildGraph, saveGraph } from '@/lib/reputation/graph';
+import { computeTrustPropagation, getGlobalTrustRanking } from '@/lib/reputation/trust-propagation';
+import { detectSybilPatterns, storeSybilAlerts } from '@/lib/reputation/sybil-detection';
+import { synthesizeScore, classifyAgent } from '@/lib/reputation/score-synthesis';
+import { generateExplanation, storeExplanation } from '@/lib/reputation/explanation';
 import { sendTask } from '@/lib/protocols/a2a/client';
 import { createEventBus } from '@/lib/events/bus';
 import { Protocol } from '@/lib/events/types';
+import type {
+  FeedbackRecord,
+  TransactionRecord,
+  ScoreSynthesisInput,
+  ExplanationInput,
+} from '@/lib/reputation/types';
+import { CivicLayer, CivicSeverity } from '@/lib/civic/types';
 
 const DEFAULT_STATE_PATH = path.join(process.cwd(), 'seed', 'engine-state.json');
 
@@ -355,8 +372,66 @@ export class SeedEngine {
       // Best-effort delivery
     }
 
+    // Step 3.5: Civic L2 behavioral inspection (when enabled)
+    let civicCaught = false;
+    if (phaseConfig.civicCheckEnabled && deliverable) {
+      try {
+        const gateway = getCivicGateway();
+        const inspectionResult = await gateway.inspectBehavior(
+          providerAgent.agentId,
+          { content: deliverable, taskDescription: interaction.description },
+          'output',
+          requesterAgent.agentId,
+        );
+
+        if (!inspectionResult.result.passed) {
+          civicCaught = true;
+
+          await handleThreat(
+            {
+              passed: false,
+              layer: CivicLayer.Behavioral,
+              agentId: providerAgent.agentId,
+              warnings: inspectionResult.result.flags?.map((f: { evidence?: string }) => f.evidence ?? '') ?? [],
+              flags: interaction.civicFlags?.map(flag => ({
+                id: `civic-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                agentId: providerAgent.agentId,
+                severity: CivicSeverity.Critical,
+                layer: CivicLayer.Behavioral,
+                attackType: flag as 'prompt_injection' | 'malicious_content',
+                evidence: `Detected in deliverable for task ${interaction.id}`,
+                timestamp: Date.now(),
+              })) ?? [],
+              verificationStatus: 'flagged' as const,
+              timestamp: Date.now(),
+            },
+            {
+              agentId: providerAgent.agentId,
+              targetAgentId: requesterAgent.agentId,
+              transactionId: `seed-${interaction.id}`,
+            },
+          );
+
+          await this.bus.emit({
+            type: 'seed:civic-catch',
+            protocol: Protocol.Civic,
+            agentId: providerAgent.agentId,
+            data: {
+              interactionId: interaction.id,
+              flags: interaction.civicFlags,
+              action: 'blocked',
+            },
+          });
+
+          console.log(`    [CIVIC L2] Caught malicious content from ${interaction.provider}: ${interaction.civicFlags?.join(', ')}`);
+        }
+      } catch {
+        console.log(`    [warn] Civic L2 inspection failed for ${interaction.id}`);
+      }
+    }
+
     // Step 4: Give feedback (on-chain)
-    const isPositive = interaction.outcome === 'positive';
+    const isPositive = civicCaught ? false : interaction.outcome === 'positive';
     await giveFeedback({
       targetAgentId: providerAgent.agentId,
       isPositive,
@@ -371,24 +446,174 @@ export class SeedEngine {
   // ──────────────────────────────────────
 
   async computeReputation(phase: SeedPhase): Promise<void> {
-    console.log(`\nComputing reputation after Phase ${phase}...\n`);
+    console.log(`\nRunning full reputation pipeline after Phase ${phase}...\n`);
 
+    if (!this.configs) this.loadConfigs();
+    const allAgents = this.configs!.agents.all;
     const agentEntries = Object.entries(this.state.registeredAgents);
+
+    // Step 1: Build feedback records from completed interactions
+    const feedbackRecords: FeedbackRecord[] = [];
+    const transactionHistory: TransactionRecord[] = [];
+
+    for (const interactionId of this.state.completedInteractions) {
+      const interaction = getInteractionById(interactionId);
+      if (!interaction || interaction.outcome === 'rejected') continue;
+
+      const providerReg = this.state.registeredAgents[interaction.provider];
+      const requesterReg = this.state.registeredAgents[interaction.requester];
+      if (!providerReg || !requesterReg) continue;
+
+      feedbackRecords.push({
+        agentId: providerReg.agentId,
+        feedbackValue: interaction.outcome === 'positive' ? 1 : interaction.outcome === 'negative' ? -1 : 0,
+        paymentAmount: interaction.usdcAmount,
+        transactionHash: `seed-${interaction.id}`,
+        timestamp: Date.now(),
+      });
+
+      transactionHistory.push({
+        from: requesterReg.agentId,
+        to: providerReg.agentId,
+        amount: interaction.usdcAmount,
+        feedbackValue: interaction.outcome === 'positive' ? 1 : interaction.outcome === 'negative' ? -1 : 0,
+        timestamp: Date.now(),
+        txHash: `seed-${interaction.id}`,
+      });
+    }
+
+    console.log(`  [1/7] Stake-weighting ${feedbackRecords.length} feedback records...`);
+    const stakeResults = computeStakeWeights(feedbackRecords);
+    const stakeMap = new Map(stakeResults.map(r => [r.agentId, r]));
+
+    // Step 2: Build payment graph
+    console.log(`  [2/7] Building payment graph...`);
+    const graph = buildGraph(
+      transactionHistory.map(tx => ({
+        payer: tx.from,
+        payee: tx.to,
+        proof: {
+          txHash: tx.txHash,
+          counterpartyAgentId: tx.to,
+          amount: String(tx.amount),
+          timestamp: tx.timestamp,
+          direction: 'outgoing' as const,
+        },
+        outcome: tx.feedbackValue >= 0 ? 'success' as const : 'fail' as const,
+      }))
+    );
+    await saveGraph(graph);
+
+    // Step 3: Trust propagation
+    console.log(`  [3/7] Computing trust propagation...`);
+    const trustResult = computeTrustPropagation(graph);
+    const ranking = getGlobalTrustRanking(trustResult);
+    const trustMap = new Map(ranking.map(r => [r.agentId, r.avgTrust]));
+
+    // Step 4: Sybil detection
+    console.log(`  [4/7] Running Sybil detection...`);
+    const agentIds = agentEntries.map(([, agent]) => agent.agentId);
+    const sybilResult = await detectSybilPatterns({
+      graph,
+      transactionHistory,
+      agentIds,
+    });
+
+    if (sybilResult.alerts.length > 0) {
+      await storeSybilAlerts(sybilResult.alerts);
+      console.log(`    Sybil alerts: ${sybilResult.alerts.length} (${sybilResult.alerts.map(a => a.patternType).join(', ')})`);
+    }
+
+    // Step 5: Score synthesis for each agent
+    console.log(`  [5/7] Synthesizing scores for ${agentEntries.length} agents...`);
+    const scores = new Map<string, { score: number; classification: string }>();
+
     for (const [walletName, agent] of agentEntries) {
+      const stakeResult = stakeMap.get(agent.agentId);
+      const trustScore = trustMap.get(agent.agentId) ?? 5.0;
+      const agentSybilAlerts = sybilResult.alerts.filter(a => a.involvedAgents.includes(agent.agentId));
+      const civicPenalty = await getCivicPenalty(agent.agentId);
+
+      const agentFeedback = feedbackRecords.filter(f => f.agentId === agent.agentId);
+      const hasNegative = agentFeedback.some(f => f.feedbackValue < 0);
+
+      const input: ScoreSynthesisInput = {
+        agentId: agent.agentId,
+        stakeWeightedScore: stakeResult?.weightedAverage ?? 5.0,
+        trustPropagationScore: trustScore,
+        sybilAlerts: agentSybilAlerts,
+        civicPenalty,
+        hasNegativeFeedback: hasNegative,
+      };
+
+      const result = synthesizeScore(input);
+      const classification = classifyAgent(result, input);
+      scores.set(agent.agentId, { score: result.finalScore, classification });
+
+      const profile = allAgents.find(a => a.walletName === walletName);
+      console.log(`    ${walletName} (${profile?.name ?? 'unknown'}): ${result.finalScore.toFixed(1)}/10 [${classification}]`);
+    }
+
+    // Step 6: Generate explanations and store on IPFS
+    console.log(`  [6/7] Generating explanations...`);
+    for (const [walletName, agent] of agentEntries) {
+      const profile = allAgents.find(a => a.walletName === walletName);
+      if (!profile) continue;
+
+      const scoreInfo = scores.get(agent.agentId);
+      if (!scoreInfo) continue;
+
+      const agentFeedback = feedbackRecords.filter(f => f.agentId === agent.agentId);
+      const positiveCount = agentFeedback.filter(f => f.feedbackValue > 0).length;
+      const negativeCount = agentFeedback.filter(f => f.feedbackValue < 0).length;
+      const totalPayment = agentFeedback.reduce((sum, f) => sum + f.paymentAmount, 0);
+      const civicFlags = await getFlags(agent.agentId);
+      const agentSybilAlerts = sybilResult.alerts.filter(a => a.involvedAgents.includes(agent.agentId));
+      const trustScore = trustMap.get(agent.agentId) ?? 5.0;
+      const stakeResult = stakeMap.get(agent.agentId);
+
+      const explanationInput: ExplanationInput = {
+        agentId: agent.agentId,
+        agentName: profile.name,
+        agentRole: profile.role,
+        score: scoreInfo.score,
+        classification: scoreInfo.classification as ExplanationInput['classification'],
+        jobCount: agentFeedback.length,
+        successRate: agentFeedback.length > 0 ? positiveCount / agentFeedback.length : 0,
+        failureRate: agentFeedback.length > 0 ? negativeCount / agentFeedback.length : 0,
+        paymentVolume: totalPayment,
+        civicFlags: civicFlags.map(f => ({ severity: f.severity, attackType: f.attackType, evidence: f.evidence })),
+        trustGraphPosition: { inboundTrust: trustScore, outboundTrust: trustScore },
+        sybilAlerts: agentSybilAlerts,
+        stakeWeightedAverage: stakeResult?.weightedAverage ?? 5.0,
+      };
+
       try {
-        await triggerReputationPipeline({
-          targetAgentId: agent.agentId,
-          feedbackValue: 1,
-          feedbackUri: '',
-          proofOfPayment: '',
-          sourceAgentId: 'seed-engine',
+        const explanation = await generateExplanation(explanationInput);
+        const stored = await storeExplanation(agent.agentId, explanation);
+
+        // Step 7: Write back to chain
+        await appendReputationResponse({
+          agentId: agent.agentId,
+          score: scoreInfo.score,
+          signalSummary: {
+            stakeWeight: stakeResult?.weightedAverage ?? 5.0,
+            trustPropagation: trustScore,
+            sybilPenalty: agentSybilAlerts.length,
+            civicFlag: await getCivicPenalty(agent.agentId),
+            paymentVolume: totalPayment,
+          },
+          explanationCid: stored.cid ?? '',
           timestamp: Date.now(),
         });
-      } catch {
-        console.log(`  [warn] Reputation computation failed for ${walletName}`);
+
+        console.log(`    [ok] ${walletName}: score=${scoreInfo.score.toFixed(1)}, cid=${stored.cid ?? 'kv-only'}`);
+      } catch (error) {
+        console.log(`    [warn] Pipeline failed for ${walletName}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
+    // Mark phase reputation as computed
     if (!this.state.reputationComputed.includes(phase)) {
       this.state.reputationComputed.push(phase);
     }
@@ -398,10 +623,10 @@ export class SeedEngine {
       type: 'seed:reputation-computed',
       protocol: Protocol.CovenantAi,
       agentId: 'seed-engine',
-      data: { phase, agentCount: agentEntries.length },
+      data: { phase, agentCount: agentEntries.length, sybilAlerts: sybilResult.alerts.length },
     });
 
-    console.log(`Reputation computed for ${agentEntries.length} agents\n`);
+    console.log(`\nReputation pipeline complete for ${agentEntries.length} agents\n`);
   }
 
   // ──────────────────────────────────────

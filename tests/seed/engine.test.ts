@@ -114,6 +114,55 @@ vi.mock('@/lib/civic/gateway', () => ({
   }),
 }));
 
+vi.mock('@/lib/civic/threat-handler', () => ({
+  handleThreat: vi.fn().mockResolvedValue({ action: 'allowed', flag: null }),
+  getFlags: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/lib/civic/reputation-bridge', () => ({
+  getCivicPenalty: vi.fn().mockResolvedValue(0),
+  computePenalty: vi.fn().mockReturnValue(0),
+}));
+
+vi.mock('@/lib/protocols/erc8004/write-back', () => ({
+  appendReputationResponse: vi.fn().mockResolvedValue({ txHash: '0xwriteback' }),
+}));
+
+vi.mock('@/lib/reputation/stake-weighting', () => ({
+  computeStakeWeights: vi.fn().mockReturnValue([]),
+}));
+
+vi.mock('@/lib/reputation/graph', () => ({
+  buildGraph: vi.fn().mockReturnValue({ nodes: [], edges: [] }),
+  saveGraph: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/lib/reputation/trust-propagation', () => ({
+  computeTrustPropagation: vi.fn().mockReturnValue({ trustMatrix: new Map(), iterations: 3, converged: true, computeTimeMs: 10 }),
+  getGlobalTrustRanking: vi.fn().mockReturnValue([]),
+}));
+
+vi.mock('@/lib/reputation/sybil-detection', () => ({
+  detectSybilPatterns: vi.fn().mockResolvedValue({ alerts: [], analysisTimestamp: Date.now(), reasoning: 'none' }),
+  storeSybilAlerts: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/lib/reputation/score-synthesis', () => ({
+  synthesizeScore: vi.fn().mockReturnValue({ agentId: 'test', finalScore: 5.0, components: {}, classification: 'neutral' }),
+  classifyAgent: vi.fn().mockReturnValue('neutral'),
+}));
+
+vi.mock('@/lib/reputation/explanation', () => ({
+  generateExplanation: vi.fn().mockResolvedValue('Test explanation'),
+  storeExplanation: vi.fn().mockResolvedValue({ cid: 'QmTest', storedInKV: true }),
+}));
+
+vi.mock('@/lib/storage/kv', () => ({
+  kvSet: mockKvSet,
+  kvGet: mockKvGet,
+  kvLpush: mockKvLpush,
+}));
+
 vi.mock('@/lib/config/env', () => ({
   env: {},
 }));
@@ -636,9 +685,7 @@ describe('executePhase', () => {
 // ──────────────────────────────────────────
 
 describe('computeReputation', () => {
-  it('triggers reputation pipeline', async () => {
-    mockTriggerReputationPipeline.mockResolvedValue(undefined);
-
+  it('runs full reputation pipeline stages', async () => {
     const state = createTestState({
       registeredAgents: { R1: { agentId: 'a1', tokenId: '1', txHash: '0x1' } },
     });
@@ -648,12 +695,12 @@ describe('computeReputation', () => {
     engine.loadConfigs();
     await engine.computeReputation('A');
 
-    expect(mockTriggerReputationPipeline).toHaveBeenCalled();
+    // Full pipeline should call score synthesis and write-back for each agent
+    const { synthesizeScore: synthMock } = await import('@/lib/reputation/score-synthesis');
+    expect(synthMock).toHaveBeenCalled();
   });
 
   it('marks phase in reputationComputed after computation', async () => {
-    mockTriggerReputationPipeline.mockResolvedValue(undefined);
-
     const state = createTestState({
       registeredAgents: { R1: { agentId: 'a1', tokenId: '1', txHash: '0x1' } },
     });
@@ -668,8 +715,6 @@ describe('computeReputation', () => {
   });
 
   it('emits seed:reputation-computed event', async () => {
-    mockTriggerReputationPipeline.mockResolvedValue(undefined);
-
     const state = createTestState({
       registeredAgents: { R1: { agentId: 'a1', tokenId: '1', txHash: '0x1' } },
     });
