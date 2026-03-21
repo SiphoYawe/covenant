@@ -69,9 +69,9 @@ export function LiveEventStream({ events, onClear }: LiveEventStreamProps) {
 
       <div ref={scrollRef} className="max-h-64 overflow-y-auto space-y-1">
         {events.map((event) => {
-          const data = event.data as Record<string, unknown>;
-          const step = (data.step as string) ?? event.type;
-          const protocol = event.protocol;
+          const data = (event.data ?? {}) as Record<string, unknown>;
+          const step = (data.step as string) ?? event.type ?? 'unknown';
+          const protocol = String(event.protocol ?? 'unknown');
           const badgeClass = PROTOCOL_BADGE_COLORS[protocol] ?? 'bg-muted text-muted-foreground';
 
           return (

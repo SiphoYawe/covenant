@@ -23,7 +23,7 @@ export default function TrustGraphPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Trust Graph</h1>
+            <h1 className="text-3xl font-semibold text-foreground">Trust Graph</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {agentCount} agents, force-directed layout
             </p>
@@ -68,7 +68,7 @@ export default function TrustGraphPage() {
                   <h3 className="text-xs font-semibold text-foreground uppercase tracking-widest">Legend</h3>
 
                   <div className="space-y-2">
-                    <p className="text-[11px] font-medium text-muted-foreground">Node Colors (by role)</p>
+                    <p className="text-[12px] font-medium text-muted-foreground">Node Colors (by role)</p>
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00BBFF' }} />
                       <span className="text-xs text-foreground">Requester</span>
@@ -84,10 +84,10 @@ export default function TrustGraphPage() {
                   </div>
 
                   <div className="space-y-1.5 pt-1 border-t border-border">
-                    <p className="text-[11px] font-medium text-muted-foreground">Visual Encoding</p>
-                    <p className="text-[11px] text-foreground">Node size = reputation score</p>
-                    <p className="text-[11px] text-foreground">Edge thickness = USDC volume</p>
-                    <p className="text-[11px] text-foreground">Arrow direction = payment flow</p>
+                    <p className="text-[12px] font-medium text-muted-foreground">Visual Encoding</p>
+                    <p className="text-[12px] text-foreground">Node size = reputation score</p>
+                    <p className="text-[12px] text-foreground">Edge thickness = USDC volume</p>
+                    <p className="text-[12px] text-foreground">Arrow direction = payment flow</p>
                   </div>
                 </motion.div>
               )}
@@ -95,10 +95,10 @@ export default function TrustGraphPage() {
 
             {/* Cluster info */}
             <div className="absolute bottom-4 left-4 flex gap-2">
-              <div className="bg-card/80 backdrop-blur-sm border border-border rounded-full px-3 py-1 text-[11px] text-muted-foreground">
+              <div className="bg-card/80 backdrop-blur-sm border border-border rounded-full px-3 py-1 text-[12px] text-muted-foreground">
                 Legitimate cluster: center
               </div>
-              <div className="bg-card/80 backdrop-blur-sm border border-border rounded-full px-3 py-1 text-[11px] text-score-critical">
+              <div className="bg-card/80 backdrop-blur-sm border border-border rounded-full px-3 py-1 text-[12px] text-score-critical">
                 Adversarial: periphery
               </div>
             </div>

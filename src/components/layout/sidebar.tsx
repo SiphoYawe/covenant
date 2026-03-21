@@ -48,7 +48,7 @@ function NavSection({
 }) {
   return (
     <div className="mb-4">
-      <span className="block uppercase text-[11px] font-semibold text-muted-foreground tracking-widest px-4 mb-2">
+      <span className="block uppercase text-[12px] font-semibold text-muted-foreground tracking-widest px-4 mb-2">
         {label}
       </span>
       <nav className="flex flex-col gap-1">

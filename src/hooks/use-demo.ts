@@ -62,7 +62,9 @@ export function useLiveTrigger(type: LiveTriggerType) {
   const events = useDashboardStore((s) =>
     s.events.filter(
       (e) =>
-        e.type.startsWith('live:') &&
+        e.type?.startsWith('live:') &&
+        e.data &&
+        typeof e.data === 'object' &&
         (e.data as Record<string, unknown>).triggerType === type,
     ),
   );

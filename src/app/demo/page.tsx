@@ -71,7 +71,7 @@ export default function DemoPage() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Live Demo Triggers</h1>
+            <h1 className="text-3xl font-semibold text-foreground">Live Demo Triggers</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Execute real-time interactions on the seeded platform. Each trigger runs real protocol calls.
             </p>
@@ -105,9 +105,9 @@ export default function DemoPage() {
             { label: 'Flagged', value: sybilRingMembers || 'None', sub: 'detected' },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-xl border border-border px-4 py-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+              <p className="text-[12px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
               <p className="text-lg font-semibold text-foreground mt-0.5">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground">{stat.sub}</p>
+              <p className="text-[12px] text-muted-foreground">{stat.sub}</p>
             </div>
           ))}
         </div>

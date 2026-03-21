@@ -47,13 +47,23 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
 
   const selectedAgentId = useDashboardStore((s) => s.selectedAgentId);
 
-  // Spread nodes apart for clarity
+  // Spread nodes apart for clarity with much stronger repulsion
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg) return;
-    fg.d3Force('charge')?.strength(-300);
-    fg.d3Force('link')?.distance(100);
-    fg.d3Force('center')?.strength(0.05);
+    // Strong charge prevents node clustering
+    fg.d3Force('charge')?.strength(-1200);
+    // Longer link distance keeps connected nodes apart
+    fg.d3Force('link')?.distance(200);
+    // Weak center force to keep graph roughly centered
+    fg.d3Force('center')?.strength(0.02);
+    // Reheat simulation to apply new forces
+    fg.d3ReheatSimulation();
+    // Auto-fit graph to container after simulation settles
+    const timer = setTimeout(() => {
+      fg.zoomToFit?.(400, 40);
+    }, 1500);
+    return () => clearTimeout(timer);
   }, [graphData]);
 
   useEffect(() => {
@@ -124,7 +134,7 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
 
       // Label
       if (showLabels) {
-        ctx.font = `${Math.max(3, radius * 0.7)}px sans-serif`;
+        ctx.font = `bold ${Math.max(4, radius * 0.8)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#FFFFFF';
@@ -148,11 +158,29 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
     if (!start || !end) return;
     const midX = (start.x + end.x) / 2;
     const midY = (start.y + end.y) / 2;
-    ctx.font = '3px sans-serif';
+
+    // Draw background pill for readability
+    const label = `$${link.volume}`;
+    ctx.font = 'bold 5px sans-serif';
+    const textWidth = ctx.measureText(label).width;
+    const padding = 3;
+    ctx.fillStyle = 'rgba(13, 17, 23, 0.85)';
+    ctx.beginPath();
+    const rx = midX - textWidth / 2 - padding;
+    const ry = midY - 5;
+    const rw = textWidth + padding * 2;
+    const rh = 10;
+    if (ctx.roundRect) {
+      ctx.roundRect(rx, ry, rw, rh, 3);
+    } else {
+      ctx.rect(rx, ry, rw, rh);
+    }
+    ctx.fill();
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#8892A0';
-    ctx.fillText(`$${link.volume}`, midX, midY);
+    ctx.fillStyle = '#00BBFF';
+    ctx.fillText(label, midX, midY);
   }, [showEdgeLabels]);
 
   return (
@@ -181,10 +209,12 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
         onNodeHover={handleNodeHover}
         onBackgroundClick={handleBackgroundClick}
         backgroundColor="transparent"
-        cooldownTicks={100}
-        d3AlphaDecay={0.02}
-        d3VelocityDecay={0.3}
-        warmupTicks={50}
+        cooldownTicks={200}
+        d3AlphaDecay={0.015}
+        d3VelocityDecay={0.25}
+        warmupTicks={100}
+        minZoom={0.5}
+        maxZoom={4}
       />
     </div>
   );

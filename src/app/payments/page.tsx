@@ -36,7 +36,7 @@ function MetricCard({ label, value, valueColor }: MetricCardProps) {
     <div className="flex-1 bg-card rounded-3xl border border-border p-5">
       <span className="text-muted-foreground text-[13px] font-medium">{label}</span>
       <div className="mt-1">
-        <span className={`text-[24px] font-bold leading-tight ${valueColor ?? 'text-foreground'}`}>
+        <span className={`text-[26px] font-bold leading-tight ${valueColor ?? 'text-foreground'}`}>
           {value}
         </span>
       </div>
@@ -117,7 +117,7 @@ export default function PaymentsPage() {
       <div className="flex flex-col gap-6 p-8 h-full">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-foreground">
+          <h1 className="text-3xl font-semibold text-foreground">
             Payment History (x402)
           </h1>
         </div>

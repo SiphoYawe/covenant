@@ -35,7 +35,7 @@ function MetricCard({ label, value, icon, iconColor, trend, trendColor }: Metric
     <div className="flex-1 bg-card rounded-3xl border border-border p-4 min-w-[140px]">
       <div className="flex items-center gap-2 mb-1">
         <HugeiconsIcon icon={icon} size={16} className={iconColor ?? 'text-primary'} />
-        <span className="text-muted-foreground text-[12px] font-medium">{label}</span>
+        <span className="text-muted-foreground text-[13px] font-medium">{label}</span>
       </div>
       <motion.div
         key={String(value)}
@@ -44,9 +44,9 @@ function MetricCard({ label, value, icon, iconColor, trend, trendColor }: Metric
         transition={{ duration: 0.3 }}
         className="flex items-baseline gap-2"
       >
-        <span className="text-foreground text-[24px] font-bold leading-tight">{value}</span>
+        <span className="text-foreground text-[26px] font-bold leading-tight">{value}</span>
         {trend && (
-          <span className={`text-[12px] ${trendColor ?? 'text-score-excellent'}`}>{trend}</span>
+          <span className={`text-[13px] ${trendColor ?? 'text-score-excellent'}`}>{trend}</span>
         )}
       </motion.div>
     </div>
@@ -83,7 +83,7 @@ export default function Home() {
       <div className="flex flex-col gap-5 p-6 h-full">
         {/* Header row */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-foreground">AI Reputation Dashboard</h1>
+          <h1 className="text-3xl font-semibold text-foreground">AI Reputation Dashboard</h1>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -159,15 +159,15 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00BBFF' }} />
-                  <span className="text-[11px] text-muted-foreground">Requester</span>
+                  <span className="text-[12px] text-muted-foreground">Requester</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00FF88' }} />
-                  <span className="text-[11px] text-muted-foreground">Provider</span>
+                  <span className="text-[12px] text-muted-foreground">Provider</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FF4444' }} />
-                  <span className="text-[11px] text-muted-foreground">Adversarial</span>
+                  <span className="text-[12px] text-muted-foreground">Adversarial</span>
                 </div>
               </div>
             </div>
