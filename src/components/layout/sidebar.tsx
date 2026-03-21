@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { UserButton } from '@civic/auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import type { IconSvgElement } from '@hugeicons/react';
 import {
@@ -13,7 +14,6 @@ import {
   PlayIcon,
   Shield01Icon,
   RocketIcon,
-  MoreVerticalIcon,
 } from '@hugeicons/core-free-icons';
 
 interface NavItem {
@@ -117,23 +117,9 @@ export function Sidebar() {
         />
       </div>
 
-      {/* Footer: User info */}
-      <div className="flex items-center gap-3 px-6 py-4 border-t border-sidebar-border">
-        <div className="flex-1 min-w-0">
-          <p className="text-foreground font-semibold text-sm truncate">
-            Demo User
-          </p>
-          <p className="text-muted-foreground text-xs truncate">
-            0x1234...abcd
-          </p>
-        </div>
-        <button
-          type="button"
-          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="User menu"
-        >
-          <HugeiconsIcon icon={MoreVerticalIcon} size={20} />
-        </button>
+      {/* Footer: Auth */}
+      <div className="px-6 py-4 border-t border-sidebar-border">
+        <UserButton />
       </div>
     </aside>
   );
