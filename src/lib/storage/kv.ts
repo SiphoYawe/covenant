@@ -1,8 +1,36 @@
 import { Redis } from '@upstash/redis';
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+let _redis: Redis | null = null;
+
+function getRedis(): Redis {
+  if (!_redis) {
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) {
+      // Return a noop Redis that returns empty values instead of spamming console warnings
+      return {
+        get: async () => null,
+        set: async () => 'OK',
+        del: async () => 0,
+        lpush: async () => 0,
+        lrange: async () => [],
+        scan: async () => ['0', []],
+      } as unknown as Redis;
+    }
+    _redis = new Redis({ url, token });
+  }
+  return _redis;
+}
+
+const redis = new Proxy({} as Redis, {
+  get(_target, prop) {
+    const instance = getRedis();
+    const value = instance[prop as keyof Redis];
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    return value;
+  },
 });
 
 /** Typed get from KV */

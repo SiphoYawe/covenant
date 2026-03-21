@@ -68,12 +68,16 @@ export function buildGraphData(
     role: a.role,
   }));
 
-  const links: GraphLink[] = edges.map((e) => ({
-    source: e.source,
-    target: e.target,
-    volume: e.weight,
-    outcome: 'success',
-  }));
+  const nodeIds = new Set(nodes.map((n) => n.id));
+
+  const links: GraphLink[] = edges
+    .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
+    .map((e) => ({
+      source: e.source,
+      target: e.target,
+      volume: e.weight,
+      outcome: 'success',
+    }));
 
   return { nodes, links };
 }
