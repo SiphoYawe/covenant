@@ -2,6 +2,8 @@
 
 import { AppLayout } from '@/components/layout/app-layout';
 import { TrustGraph } from '@/components/dashboard/trust-graph';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { InformationCircleIcon } from '@hugeicons/core-free-icons';
 
 export default function TrustGraphPage() {
   return (
@@ -32,9 +34,7 @@ export default function TrustGraphPage() {
             <TrustGraph />
           </div>
           <div className="absolute top-4 left-5 flex items-center gap-1.5 pointer-events-none">
-            <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-            </svg>
+            <HugeiconsIcon icon={InformationCircleIcon} size={14} className="text-muted-foreground" />
             <span className="text-xs text-muted-foreground">
               Node size = reputation weight. Line thickness = transaction volume.
             </span>

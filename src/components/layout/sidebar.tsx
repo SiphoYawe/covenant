@@ -3,32 +3,34 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { HugeiconsIcon } from '@hugeicons/react';
+import type { IconSvgElement } from '@hugeicons/react';
 import {
-  LayoutDashboard,
-  Bot,
-  Network,
-  CreditCard,
-  Play,
-  Shield,
-  EllipsisVertical,
-} from 'lucide-react';
+  DashboardSquare01Icon,
+  ArtificialIntelligence01Icon,
+  AiNetworkIcon,
+  CreditCardIcon,
+  PlayIcon,
+  Shield01Icon,
+  MoreVerticalIcon,
+} from '@hugeicons/core-free-icons';
 
 interface NavItem {
   label: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconSvgElement;
 }
 
 const navigationItems: NavItem[] = [
-  { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { label: 'Agents', href: '/agents', icon: Bot },
-  { label: 'Trust Graph', href: '/trust-graph', icon: Network },
-  { label: 'Payments', href: '/payments', icon: CreditCard },
+  { label: 'Dashboard', href: '/', icon: DashboardSquare01Icon },
+  { label: 'Agents', href: '/agents', icon: ArtificialIntelligence01Icon },
+  { label: 'Trust Graph', href: '/trust-graph', icon: AiNetworkIcon },
+  { label: 'Payments', href: '/payments', icon: CreditCardIcon },
 ];
 
 const demoItems: NavItem[] = [
-  { label: 'Run Demo', href: '/demo', icon: Play },
-  { label: 'Civic Guards', href: '/civic-guards', icon: Shield },
+  { label: 'Run Demo', href: '/demo', icon: PlayIcon },
+  { label: 'Civic Guards', href: '/civic-guards', icon: Shield01Icon },
 ];
 
 function NavSection({
@@ -48,8 +50,6 @@ function NavSection({
       <nav className="flex flex-col gap-1">
         {items.map((item) => {
           const isActive = currentPath === item.href;
-          const Icon = item.icon;
-
           return (
             <Link
               key={item.href}
@@ -63,8 +63,10 @@ function NavSection({
                 }
               `}
             >
-              <Icon
-                className={`h-5 w-5 shrink-0 ${isActive ? 'text-primary' : ''}`}
+              <HugeiconsIcon
+                icon={item.icon}
+                size={20}
+                className={`shrink-0 ${isActive ? 'text-primary' : ''}`}
               />
               <span>{item.label}</span>
             </Link>
@@ -120,7 +122,7 @@ export function Sidebar() {
           className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
           aria-label="User menu"
         >
-          <EllipsisVertical className="h-5 w-5" />
+          <HugeiconsIcon icon={MoreVerticalIcon} size={20} />
         </button>
       </div>
     </aside>
