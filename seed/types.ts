@@ -249,6 +249,36 @@ export interface SeedScenario {
 }
 
 // ──────────────────────────────────────────
+// Story 9.4 Types (Engine State)
+// ──────────────────────────────────────────
+
+export interface EngineRegisteredAgent {
+  agentId: string;
+  tokenId: string;
+  txHash: string;
+}
+
+export interface EngineState {
+  registeredAgents: Record<string, EngineRegisteredAgent>;
+  completedInteractions: string[];
+  phasesCompleted: string[];
+  reputationComputed: string[];
+  lastUpdated: string;
+}
+
+export const engineStateSchema = z.object({
+  registeredAgents: z.record(z.string(), z.object({
+    agentId: z.string(),
+    tokenId: z.string(),
+    txHash: z.string(),
+  })),
+  completedInteractions: z.array(z.string()),
+  phasesCompleted: z.array(z.string()),
+  reputationComputed: z.array(z.string()),
+  lastUpdated: z.string(),
+});
+
+// ──────────────────────────────────────────
 // Consolidation Types
 // ──────────────────────────────────────────
 
