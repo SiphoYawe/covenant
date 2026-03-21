@@ -150,20 +150,13 @@ export default function CivicGuardsPage() {
         </div>
 
         {/* Summary stats bar */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <StatCard
             label="Total Inspections"
             value={metrics.totalInspections}
             icon={SecurityCheckIcon}
             iconColor="text-primary"
             bgColor="bg-primary/10"
-          />
-          <StatCard
-            label="L2 Passes"
-            value={metrics.l2Passes}
-            icon={SecurityCheckIcon}
-            iconColor="text-score-excellent"
-            bgColor="bg-score-excellent/10"
           />
           <StatCard
             label="Layer 2 Catches"

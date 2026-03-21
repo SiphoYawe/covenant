@@ -77,7 +77,7 @@ async function runInspection(
   try {
     const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
-    // mcp_servers is a beta parameter, not in SDK types
+    // mcp_servers + mcp_toolset are beta parameters, not in SDK types yet
     const response = await client.messages.create(
       {
         model: 'claude-haiku-4-5-20251001',
@@ -91,7 +91,13 @@ async function runInspection(
             authorization_token: env.CIVIC_TOKEN,
           },
         ],
-      } as Parameters<typeof client.messages.create>[0],
+        tools: [
+          {
+            type: 'mcp_toolset',
+            mcp_server_name: 'civic',
+          },
+        ],
+      } as unknown as Parameters<typeof client.messages.create>[0],
       {
         headers: {
           'anthropic-beta': 'mcp-client-2025-11-20',
