@@ -15,7 +15,6 @@ describe('Environment Validation', () => {
     CIVIC_MCP_ENDPOINT: 'https://civic.example.com',
     CIVIC_TOKEN: 'civic-test-token',
     X402_FACILITATOR_URL: 'https://x402.example.com',
-    SENTRY_DSN: 'https://sentry.example.com/123',
   };
 
   let originalEnv: NodeJS.ProcessEnv;

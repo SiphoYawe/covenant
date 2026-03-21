@@ -14,7 +14,6 @@ export const envSchema = z.object({
   CIVIC_MCP_ENDPOINT: z.string().url(),
   CIVIC_TOKEN: z.string().min(1),
   X402_FACILITATOR_URL: z.string().url(),
-  SENTRY_DSN: z.string().url(),
   CIVIC_CLIENT_ID: z.string().optional(),
   CIVIC_CLIENT_SECRET: z.string().optional(),
 });

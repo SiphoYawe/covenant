@@ -23,7 +23,6 @@ vi.mock('@/lib/config/env', () => ({
     KV_REST_API_TOKEN: 'test',
     CIVIC_MCP_ENDPOINT: 'https://civic.test',
     X402_FACILITATOR_URL: 'https://x402.test/facilitator',
-    SENTRY_DSN: 'https://sentry.test',
   },
 }));
 

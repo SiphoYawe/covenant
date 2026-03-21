@@ -1,6 +1,6 @@
 'use client';
 
-import { CivicAuthProvider } from '@civic/auth/react';
+import { CivicAuthProvider } from '@civic/auth/nextjs';
 
 export default function DeployLayout({
   children,
@@ -8,7 +8,7 @@ export default function DeployLayout({
   children: React.ReactNode;
 }) {
   return (
-    <CivicAuthProvider clientId={process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID ?? ''}>
+    <CivicAuthProvider>
       {children}
     </CivicAuthProvider>
   );

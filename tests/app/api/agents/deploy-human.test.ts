@@ -45,7 +45,6 @@ const TEST_ENV = {
   UPSTASH_REDIS_REST_TOKEN: 'test',
   CIVIC_MCP_ENDPOINT: 'https://civic.test',
   X402_FACILITATOR_URL: 'https://x402.test',
-  SENTRY_DSN: 'https://sentry.test',
 };
 
 vi.mock('@/lib/config/env', () => ({

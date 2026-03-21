@@ -1,4 +1,4 @@
-import { withSentryConfig } from '@sentry/nextjs';
+import { createCivicAuthPlugin } from '@civic/auth/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -10,11 +10,8 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default withSentryConfig(nextConfig, {
-  org: 'covenant',
-  project: 'covenant',
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  disableLogger: true,
-  automaticVercelMonitors: true,
+const withCivicAuth = createCivicAuthPlugin({
+  clientId: process.env.CIVIC_CLIENT_ID ?? '',
 });
+
+export default withCivicAuth(nextConfig);
