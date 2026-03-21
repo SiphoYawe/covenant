@@ -20,6 +20,7 @@ export type AgentState = {
   civicFlagged?: boolean;
   lastUpdated: number;
   paymentVolume?: number;
+  explanation?: string;
 };
 
 export type TrustEdge = {
@@ -37,6 +38,14 @@ export type EconomicMetrics = {
   totalFeedback: number;
 };
 
+export type CivicMetrics = {
+  totalInspections: number;
+  l1Passes: number;
+  l2Passes: number;
+  l2Catches: number;
+  criticalFlags: number;
+};
+
 export type DemoState = {
   status: 'idle' | 'seeded' | 'running' | 'complete';
 };
@@ -46,6 +55,7 @@ export type DashboardState = {
   edges: TrustEdge[];
   events: DemoEvent[];
   metrics: EconomicMetrics;
+  civicMetrics: CivicMetrics;
   demoState: DemoState;
   selectedAgentId: string | null;
   filterBy: FilterBy;
@@ -89,6 +99,13 @@ const initialState: DashboardState = {
     totalTransactions: 0,
     averagePayment: 0,
     totalFeedback: 0,
+  },
+  civicMetrics: {
+    totalInspections: 0,
+    l1Passes: 0,
+    l2Passes: 0,
+    l2Catches: 0,
+    criticalFlags: 0,
   },
   demoState: {
     status: 'idle',
@@ -285,6 +302,7 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
         agents: data.agents ?? {},
         edges: data.edges ?? [],
         metrics: data.metrics ?? initialState.metrics,
+        civicMetrics: data.civicMetrics ?? initialState.civicMetrics,
         events: allEvents,
       });
     } catch {
@@ -345,6 +363,9 @@ export const useDemoState = () =>
 
 export const useEdges = () =>
   useDashboardStore((s) => s.edges);
+
+export const useCivicMetrics = () =>
+  useDashboardStore(useShallow((s) => s.civicMetrics));
 
 export const useSelectedAgentId = () =>
   useDashboardStore((s) => s.selectedAgentId);

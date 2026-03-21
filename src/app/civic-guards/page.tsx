@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
-import { useAgents, useEvents } from '@/stores/dashboard';
+import { useAgents, useEvents, useCivicMetrics } from '@/stores/dashboard';
 import { formatTimestamp } from '@/components/dashboard/feed-utils';
 import { Badge } from '@/components/ui/badge';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -110,6 +110,7 @@ function eventToInspection(
 export default function CivicGuardsPage() {
   const agents = useAgents();
   const events = useEvents();
+  const civicMetrics = useCivicMetrics();
 
   // Build inspection timeline from real Civic events in the store
   const inspections = useMemo<CivicInspection[]>(() => {
@@ -128,20 +129,8 @@ export default function CivicGuardsPage() {
     return Object.values(agents).filter((a) => a.civicFlagged);
   }, [agents]);
 
-  // Summary metrics from real data
-  const metrics = useMemo(() => {
-    const totalInspections = inspections.length;
-    const l1Passes = inspections.filter(
-      (i) => i.layer === 'L1' && i.result === 'pass',
-    ).length;
-    const l2Catches = inspections.filter(
-      (i) => i.layer === 'L2' && i.result === 'catch',
-    ).length;
-    const criticalFlags = inspections.filter(
-      (i) => i.severity === 'critical',
-    ).length;
-    return { totalInspections, l1Passes, l2Catches, criticalFlags };
-  }, [inspections]);
+  // Use server-computed civic metrics (covers all events, not capped at 50)
+  const metrics = civicMetrics;
 
   return (
     <AppLayout>
@@ -170,8 +159,8 @@ export default function CivicGuardsPage() {
             bgColor="bg-primary/10"
           />
           <StatCard
-            label="Layer 1 Passes"
-            value={metrics.l1Passes}
+            label="L2 Passes"
+            value={metrics.l2Passes}
             icon={SecurityCheckIcon}
             iconColor="text-score-excellent"
             bgColor="bg-score-excellent/10"

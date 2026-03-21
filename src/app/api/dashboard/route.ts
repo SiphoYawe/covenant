@@ -53,6 +53,14 @@ export async function GET() {
     'civic:resolved',
   ];
   const civicEvents: typeof allEvents = [];
+  // Pre-compute civic metrics server-side (not limited by store cap)
+  const civicMetrics = {
+    totalInspections: 0,
+    l1Passes: 0,
+    l2Passes: 0,
+    l2Catches: 0,
+    criticalFlags: 0,
+  };
 
   for (const event of allEvents) {
     if (event.type === 'seed:registration' && event.agentId) {
@@ -71,6 +79,12 @@ export async function GET() {
     }
     if (civicEventTypes.includes(event.type)) {
       civicEvents.push(event);
+      civicMetrics.totalInspections++;
+      if (event.type === 'civic:identity-checked' && event.data?.passed) civicMetrics.l1Passes++;
+      if (event.type === 'civic:behavioral-checked') civicMetrics.l2Passes++;
+      if (event.type === 'civic:flagged') { civicMetrics.l2Catches++; civicMetrics.criticalFlags++; }
+      if (event.type === 'civic:tool-blocked') { civicMetrics.l2Catches++; civicMetrics.criticalFlags++; }
+      if (event.type === 'civic:resolved') { civicMetrics.l2Catches++; civicMetrics.criticalFlags++; }
     }
     if (event.type === 'feedback:submitted') {
       totalFeedback++;
@@ -82,7 +96,22 @@ export async function GET() {
     }
   }
 
-  // Build agents from graph nodes enriched with names
+  // Load AI explanations from KV for each agent
+  const explanationMap = new Map<string, string>();
+  for (const node of nodes) {
+    // Try deferred KV explanation first, then cached reputation
+    const deferred = await kv.get<{ explanation: string }>(`agent:${node.agentId}:explanation-deferred`);
+    if (deferred?.explanation) {
+      explanationMap.set(node.agentId, deferred.explanation);
+    } else {
+      const cached = await kv.get<{ explanationText?: string | null }>(`agent:${node.agentId}:reputation`);
+      if (cached?.explanationText) {
+        explanationMap.set(node.agentId, cached.explanationText);
+      }
+    }
+  }
+
+  // Build agents from graph nodes enriched with names + explanations
   const agents: Record<string, {
     agentId: string;
     name: string;
@@ -92,6 +121,7 @@ export async function GET() {
     civicFlagged?: boolean;
     lastUpdated: number;
     paymentVolume?: number;
+    explanation?: string;
   }> = {};
 
   for (const node of nodes) {
@@ -128,6 +158,7 @@ export async function GET() {
       civicFlagged: civicFlagged.has(node.agentId),
       lastUpdated: Date.now(),
       paymentVolume: volume,
+      explanation: explanationMap.get(node.agentId) || undefined,
     };
   }
 
@@ -158,6 +189,7 @@ export async function GET() {
       totalFeedback,
     },
     civicEvents,
+    civicMetrics,
     eventCount: allEvents.length,
   });
 }

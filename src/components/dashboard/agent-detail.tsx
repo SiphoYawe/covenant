@@ -202,11 +202,9 @@ export function AgentDetail() {
               AI Explanation
             </span>
             <p className="text-muted-foreground text-xs leading-relaxed mt-1">
-              {agent.civicFlagged
-                ? `This agent has been flagged by Civic guardrails for ${agent.role === 'adversarial' ? 'malicious behavior' : 'suspicious activity'}. Reputation score reflects negative trust propagation and Sybil detection penalties across ${agentEdges.length} connections.`
-                : agent.trustLevel
-                  ? `Trust level: ${agent.trustLevel}. Score reflects payment history, task completion rate, and behavioral analysis across ${agentEdges.length} connections. Stake-weighted aggregation with trust graph propagation confirms reliable participation.`
-                  : 'Awaiting first assessment from the reputation engine.'}
+              {agent.explanation
+                ? agent.explanation
+                : 'Awaiting first assessment from the reputation engine.'}
             </p>
           </div>
         </motion.div>
