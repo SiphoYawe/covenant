@@ -1,6 +1,6 @@
 import { createPublicClient, http, parseAbiItem } from 'viem';
 import { baseSepolia } from 'viem/chains';
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/storage/kv';
 import { env } from '@/lib/config/env';
 import { createEventBus } from '@/lib/events/bus';
 import { Protocol } from '@/lib/events/types';

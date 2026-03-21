@@ -17,6 +17,7 @@
     "@civic/auth-web3": "^0.11.0",
     "@hugeicons/core-free-icons": "^4.0.0",
     "@hugeicons/react": "^1.1.6",
+    "@upstash/redis": "^1.37.0",
     "@vercel/kv": "^3.0.0",
     "agent0-sdk": "^1.7.1",
     "framer-motion": "^12.38.0",

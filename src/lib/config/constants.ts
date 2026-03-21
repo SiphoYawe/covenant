@@ -17,7 +17,7 @@ export const SSE_RECONNECT_MS = 3_000;
 export const MAX_FEED_EVENTS = 50;
 
 /** Claude model for agent reasoning */
-export const CLAUDE_MODEL = 'claude-sonnet-4-5-20250514';
+export const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 
 /** Max tokens for agent reasoning responses */
 export const CLAUDE_MAX_TOKENS = 1024;

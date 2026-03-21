@@ -31,7 +31,7 @@ ${input.civicFlags.length > 0 ? `Civic flags: ${JSON.stringify(input.civicFlags)
 ${input.sybilAlerts.length > 0 ? `Sybil alerts: ${input.sybilAlerts.map((a) => `${a.patternType} (confidence: ${a.confidence})`).join(', ')}` : 'No Sybil alerts'}`;
 
   const response = await claude.messages.create({
-    model: 'claude-sonnet-4-5-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 512,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],

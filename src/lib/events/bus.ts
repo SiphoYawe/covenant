@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/storage/kv';
 import type { DemoEvent } from './types';
 
 const EVENTS_KEY = 'events:log';
@@ -32,7 +32,9 @@ export function createEventBus(): EventBus {
       const raw = await kv.zrange(EVENTS_KEY, `(${cursor}`, '+inf', {
         byScore: true,
       });
-      return (raw as string[]).map((item) => JSON.parse(item) as DemoEvent);
+      return (raw as (string | DemoEvent)[]).map((item) =>
+        typeof item === 'string' ? (JSON.parse(item) as DemoEvent) : item
+      );
     },
   };
 }

@@ -20,8 +20,11 @@ import { getPhaseInteractions, getInteractionById } from './interactions';
 import { getSDK } from '@/lib/protocols/erc8004/client';
 import { giveFeedback } from '@/lib/protocols/erc8004/reputation';
 import { appendReputationResponse } from '@/lib/protocols/erc8004/write-back';
-import { executePayment } from '@/lib/protocols/x402/client';
 import { negotiatePrice } from '@/lib/orchestrator/negotiation';
+import { createWalletClient, createPublicClient, http, parseUnits } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { baseSepolia } from 'viem/chains';
+import { USDC_CONTRACT_ADDRESS, ERC20_ABI, envKeyForWallet } from './types';
 import { inspectIdentityMetadata } from '@/lib/civic/identity-inspector';
 import { getCivicGateway } from '@/lib/civic/gateway';
 import { handleThreat, getFlags } from '@/lib/civic/threat-handler';
@@ -299,8 +302,8 @@ export class SeedEngine {
       }
     }
 
-    // Mark phase as completed
-    if (!this.state.phasesCompleted.includes(phase)) {
+    // Only mark phase as completed if ALL interactions succeeded
+    if (failed === 0 && !this.state.phasesCompleted.includes(phase)) {
       this.state.phasesCompleted.push(phase);
     }
     saveEngineState(this.state, this.statePath);
@@ -318,7 +321,50 @@ export class SeedEngine {
       },
     });
 
-    console.log(`\nPhase ${phase} complete: ${completed}/${interactions.length} (${failed} failed)\n`);
+    const status = failed === 0 ? 'COMPLETE' : 'PARTIAL (re-run with --resume after funding)';
+    console.log(`\nPhase ${phase}: ${completed}/${interactions.length} (${failed} failed) [${status}]\n`);
+  }
+
+  private async executeSeedPayment(
+    payerWalletName: string,
+    payeeWalletName: string,
+    amount: number,
+    interactionId: string,
+  ): Promise<{ txHash: string; payer: string; payee: string; amount: string }> {
+    const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
+    const payerKey = process.env[envKeyForWallet(payerWalletName)];
+    const payeeKey = process.env[envKeyForWallet(payeeWalletName)];
+    if (!payerKey) throw new Error(`Missing env var: ${envKeyForWallet(payerWalletName)}`);
+    if (!payeeKey) throw new Error(`Missing env var: ${envKeyForWallet(payeeWalletName)}`);
+
+    const payerAccount = privateKeyToAccount(payerKey as `0x${string}`);
+    const payeeAccount = privateKeyToAccount(payeeKey as `0x${string}`);
+
+    const walletClient = createWalletClient({
+      account: payerAccount,
+      chain: baseSepolia,
+      transport: http(rpcUrl),
+    });
+
+    const amountInWei = parseUnits(amount.toFixed(2), 6);
+
+    const txHash = await walletClient.writeContract({
+      address: USDC_CONTRACT_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: 'transfer',
+      args: [payeeAccount.address, amountInWei],
+    });
+
+    // Wait for confirmation
+    const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) });
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+    return {
+      txHash,
+      payer: payerAccount.address,
+      payee: payeeAccount.address,
+      amount: amount.toFixed(2),
+    };
   }
 
   private async executeInteraction(interaction: SeedInteraction, phaseConfig: PhaseConfig): Promise<void> {
@@ -335,7 +381,7 @@ export class SeedEngine {
       return;
     }
 
-    // Step 1: Negotiate price
+    // Step 1: Negotiate price (capped to interaction budget to prevent overspend)
     const negotiation = await negotiatePrice({
       requesterId: requesterAgent.agentId,
       providerId: providerAgent.agentId,
@@ -343,15 +389,20 @@ export class SeedEngine {
       initialOffer: interaction.usdcAmount,
     });
 
-    const agreedPrice = negotiation.agreedPrice ?? interaction.usdcAmount;
+    // Cap the agreed price to the planned amount. The AI negotiation may
+    // counter higher, but we enforce the budget to prevent wallet depletion.
+    const agreedPrice = Math.min(
+      negotiation.agreedPrice ?? interaction.usdcAmount,
+      interaction.usdcAmount,
+    );
 
-    // Step 2: Execute payment (real x402 USDC transfer)
-    const paymentResult = await executePayment({
-      payerAgentId: requesterAgent.agentId,
-      payeeAgentId: providerAgent.agentId,
-      amount: agreedPrice.toFixed(2),
-      taskId: `seed-${interaction.id}`,
-    });
+    // Step 2: Execute payment (direct USDC transfer using seed wallet keys)
+    const paymentResult = await this.executeSeedPayment(
+      interaction.requester,
+      interaction.provider,
+      agreedPrice,
+      interaction.id,
+    );
 
     // Step 3: Task delivery (A2A)
     let deliverable = 'Task completed';
@@ -592,20 +643,31 @@ export class SeedEngine {
         const explanation = await generateExplanation(explanationInput);
         const stored = await storeExplanation(agent.agentId, explanation);
 
-        // Step 7: Write back to chain
-        await appendReputationResponse({
-          agentId: agent.agentId,
-          score: scoreInfo.score,
-          signalSummary: {
-            stakeWeight: stakeResult?.weightedAverage ?? 5.0,
-            trustPropagation: trustScore,
-            sybilPenalty: agentSybilAlerts.length,
-            civicFlag: await getCivicPenalty(agent.agentId),
-            paymentVolume: totalPayment,
-          },
-          explanationCid: stored.cid ?? '',
-          timestamp: Date.now(),
-        });
+        // Step 7: Write back to chain using system wallet key directly
+        const systemKey = process.env.SYSTEM_PRIVATE_KEY;
+        if (systemKey) {
+          const systemSdk = getSDK(systemKey);
+          await systemSdk.giveFeedback(
+            agent.agentId,
+            Math.round(scoreInfo.score),
+            'covenant-reputation',
+            'append-response',
+            undefined,
+            {
+              text: `ipfs://${stored.cid ?? ''}`,
+              proofOfPayment: {
+                txHash: JSON.stringify({
+                  stakeWeight: stakeResult?.weightedAverage ?? 5.0,
+                  trustPropagation: trustScore,
+                  sybilPenalty: agentSybilAlerts.length,
+                  civicFlag: await getCivicPenalty(agent.agentId),
+                  paymentVolume: totalPayment,
+                }),
+                timestamp: Date.now(),
+              },
+            },
+          );
+        }
 
         console.log(`    [ok] ${walletName}: score=${scoreInfo.score.toFixed(1)}, cid=${stored.cid ?? 'kv-only'}`);
       } catch (error) {

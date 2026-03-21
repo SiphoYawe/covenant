@@ -19,18 +19,22 @@ export async function GET(request: Request): Promise<Response> {
       const encoder = new TextEncoder();
 
       // Initial flush of existing events — batch into single chunk
-      const initial = await bus.since(cursor);
-      if (initial.length > 0) {
-        let batch = '';
-        for (const event of initial) {
-          batch += formatSSE({
-            id: event.id,
-            type: event.type,
-            data: JSON.stringify(event),
-          });
-          cursor = event.timestamp;
+      try {
+        const initial = await bus.since(cursor);
+        if (initial.length > 0) {
+          let batch = '';
+          for (const event of initial) {
+            batch += formatSSE({
+              id: event.id,
+              type: event.type,
+              data: JSON.stringify(event),
+            });
+            cursor = event.timestamp;
+          }
+          controller.enqueue(encoder.encode(batch));
         }
-        controller.enqueue(encoder.encode(batch));
+      } catch {
+        // KV read failed on initial load — continue to polling
       }
 
       // Poll for new events

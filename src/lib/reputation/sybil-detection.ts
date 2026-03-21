@@ -208,7 +208,7 @@ Analyze these patterns. For each suspicious finding, create an alert with classi
 
   try {
     const response = await claude.messages.create({
-      model: 'claude-sonnet-4-5-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
@@ -233,7 +233,7 @@ Analyze these patterns. For each suspicious finding, create an alert with classi
     try {
       await new Promise((r) => setTimeout(r, 2000));
       const response = await claude.messages.create({
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
