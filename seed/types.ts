@@ -138,8 +138,11 @@ export interface SeedAgentProfile {
   walletName: string;
   role: AgentRole;
   domain: string;
+  description: string;
   capabilities: string[];
   pricing: PricingStrategy;
+  systemPrompt: string;
+  hiringPreferences?: string[];
   attackType?: string;
   attackStrategy?: string;
   budgetPattern?: string;
@@ -150,12 +153,22 @@ export const seedAgentProfileSchema = z.object({
   walletName: z.string().min(1),
   role: agentRoleSchema,
   domain: z.string().min(1),
-  capabilities: z.array(z.string()),
+  description: z.string().min(1),
+  capabilities: z.array(z.string()).min(1),
   pricing: pricingStrategySchema,
+  systemPrompt: z.string().min(10),
+  hiringPreferences: z.array(z.string()).optional(),
   attackType: z.string().optional(),
   attackStrategy: z.string().optional(),
   budgetPattern: z.string().optional(),
 });
+
+export interface AgentRoster {
+  requesters: SeedAgentProfile[];
+  providers: SeedAgentProfile[];
+  adversarial: SeedAgentProfile[];
+  all: SeedAgentProfile[];
+}
 
 // ──────────────────────────────────────────
 // Story 9.3 Types (Interaction Graph)
