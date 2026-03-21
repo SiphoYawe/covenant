@@ -18,9 +18,12 @@ export async function GET(request: Request): Promise<Response> {
     async start(controller) {
       const encoder = new TextEncoder();
 
-      // Initial flush of existing events — batch into single chunk
+      // Initial flush — only send the most recent 50 events to avoid
+      // overwhelming the browser (KV has 2000+ events from seeding)
       try {
-        const initial = await bus.since(cursor);
+        const initial = cursor > 0
+          ? await bus.since(cursor, 50)
+          : await bus.recent(50);
         if (initial.length > 0) {
           let batch = '';
           for (const event of initial) {
