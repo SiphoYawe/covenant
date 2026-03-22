@@ -88,8 +88,10 @@ Respond with either:
       .map((block) => block.text)
       .join('\n');
 
-    if (text.startsWith('FLAGGED:')) {
-      const evidence = text.replace('FLAGGED:', '').trim();
+    // Strip markdown formatting (bold, etc.) before checking prefix
+    const cleanText = text.replace(/^\*+/, '').trim();
+    if (cleanText.startsWith('FLAGGED:')) {
+      const evidence = cleanText.replace('FLAGGED:', '').trim().replace(/\*+$/, '').trim();
       return {
         passed: false,
         layer: CivicLayer.Identity,

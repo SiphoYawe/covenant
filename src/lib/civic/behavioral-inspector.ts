@@ -111,8 +111,10 @@ async function runInspection(
       .map((block) => block.text)
       .join('\n');
 
-    if (text.startsWith('FLAGGED:')) {
-      const evidence = text.replace('FLAGGED:', '').trim();
+    // Strip markdown formatting (bold, etc.) before checking prefix
+    const cleanText = text.replace(/^\*+/, '').trim();
+    if (cleanText.startsWith('FLAGGED:')) {
+      const evidence = cleanText.replace('FLAGGED:', '').trim().replace(/\*+$/, '').trim();
       const severity = direction === 'output' ? CivicSeverity.Critical : CivicSeverity.High;
 
       const flag: CivicFlag = {

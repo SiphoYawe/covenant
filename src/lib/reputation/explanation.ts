@@ -113,8 +113,8 @@ export async function generateAndStoreExplanation(
   // Step 2: Store on IPFS (with KV fallback)
   const storage = await storeExplanation(input.agentId, explanation);
 
-  // Step 3: Cache in KV
-  const explanationText = storage.cid ? null : explanation;
+  // Step 3: Cache in KV (always keep text for dashboard display)
+  const explanationText = explanation;
   const retryPinning = storage.cid === null;
   await cacheReputationWithExplanation(
     input.agentId,
