@@ -76,7 +76,12 @@ export async function storeFlag(flag: CivicFlag): Promise<void> {
 export async function getFlags(agentId: string): Promise<CivicFlag[]> {
   const { kvLrange: lrange } = await import('@/lib/storage/kv');
   const raw = await lrange(`agent:${agentId}:civic-flags`, 0, -1);
-  return raw.map((item) => JSON.parse(item) as CivicFlag);
+  return raw.map((item) => {
+    if (typeof item === 'string') {
+      try { return JSON.parse(item) as CivicFlag; } catch { return item as unknown as CivicFlag; }
+    }
+    return item as unknown as CivicFlag;
+  });
 }
 
 /** Get flags since a given timestamp */

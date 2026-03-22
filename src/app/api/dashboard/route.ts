@@ -97,22 +97,29 @@ export async function GET() {
     }
   }
 
-  // Load AI explanations from KV for each agent
+  // Load engine-computed reputation scores + AI explanations from KV for each agent
+  type ReputationCache = { score: number; explanationCID?: string | null; explanationText?: string | null };
+  const reputationMap = new Map<string, ReputationCache>();
   const explanationMap = new Map<string, string>();
+
   for (const node of nodes) {
-    // Try deferred KV explanation first, then cached reputation
-    const deferred = await kv.get<{ explanation: string }>(`agent:${node.agentId}:explanation-deferred`);
-    if (deferred?.explanation) {
-      explanationMap.set(node.agentId, stripMarkdown(deferred.explanation));
-    } else {
-      const cached = await kv.get<{ explanationText?: string | null }>(`agent:${node.agentId}:reputation`);
-      if (cached?.explanationText) {
+    const cached = await kv.get<ReputationCache>(`agent:${node.agentId}:reputation`);
+    if (cached) {
+      reputationMap.set(node.agentId, cached);
+      if (cached.explanationText) {
         explanationMap.set(node.agentId, stripMarkdown(cached.explanationText));
+      }
+    }
+    // Also check deferred explanations (pinning failed, text in separate key)
+    if (!explanationMap.has(node.agentId)) {
+      const deferred = await kv.get<{ explanation: string }>(`agent:${node.agentId}:explanation-deferred`);
+      if (deferred?.explanation) {
+        explanationMap.set(node.agentId, stripMarkdown(deferred.explanation));
       }
     }
   }
 
-  // Build agents from graph nodes enriched with names + explanations
+  // Build agents from graph nodes enriched with names, engine scores, and explanations
   const agents: Record<string, {
     agentId: string;
     name: string;
@@ -143,12 +150,19 @@ export async function GET() {
     else if (walletName.startsWith('S')) { role = role || 'provider'; domain = 'services'; }
     else if (walletName.startsWith('X')) { role = role || 'adversarial'; domain = 'adversarial'; }
 
-    // Compute a reputation score from payment outcomes
-    const agentEdges = edges.filter(e => e.source === node.agentId || e.target === node.agentId);
-    const successEdges = agentEdges.filter(e => e.outcome === 'success');
-    const reputationScore = agentEdges.length > 0
-      ? (successEdges.length / agentEdges.length) * 10
-      : 5.0; // default for agents with no transactions
+    // Use engine-computed score from KV (stake-weighted + trust propagation + penalties).
+    // Fall back to edge success ratio only if the engine hasn't scored this agent yet.
+    const engineScore = reputationMap.get(node.agentId)?.score;
+    let reputationScore: number;
+    if (engineScore != null) {
+      reputationScore = engineScore;
+    } else {
+      const agentEdges = edges.filter(e => e.source === node.agentId || e.target === node.agentId);
+      const successEdges = agentEdges.filter(e => e.outcome === 'success');
+      reputationScore = agentEdges.length > 0
+        ? (successEdges.length / agentEdges.length) * 10
+        : 5.0;
+    }
 
     agents[node.agentId] = {
       agentId: node.agentId,

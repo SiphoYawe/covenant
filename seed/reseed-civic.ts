@@ -178,11 +178,23 @@ async function main() {
     const requesterReg = state.registeredAgents[interaction.requester];
     if (!providerReg || !requesterReg) continue;
 
+    const feedbackValue = interaction.outcome === 'positive' ? 1 : interaction.outcome === 'negative' ? -1 : 0;
+
+    // Provider feedback record (received the job)
     feedbackRecords.push({
       agentId: providerReg.agentId,
-      feedbackValue: interaction.outcome === 'positive' ? 1 : interaction.outcome === 'negative' ? -1 : 0,
+      feedbackValue,
       paymentAmount: interaction.usdcAmount,
       transactionHash: `seed-${interaction.id}`,
+      timestamp: Date.now(),
+    });
+
+    // Requester feedback record (paid for the job)
+    feedbackRecords.push({
+      agentId: requesterReg.agentId,
+      feedbackValue,
+      paymentAmount: interaction.usdcAmount,
+      transactionHash: `seed-${interaction.id}-req`,
       timestamp: Date.now(),
     });
 
@@ -190,7 +202,7 @@ async function main() {
       from: requesterReg.agentId,
       to: providerReg.agentId,
       amount: interaction.usdcAmount,
-      feedbackValue: interaction.outcome === 'positive' ? 1 : interaction.outcome === 'negative' ? -1 : 0,
+      feedbackValue,
       timestamp: Date.now(),
       txHash: `seed-${interaction.id}`,
     });
@@ -289,18 +301,35 @@ async function main() {
     const trustScore = trustMap.get(agent.agentId) ?? 5.0;
     const stakeResult = stakeMap.get(agent.agentId);
 
+    // Compute inbound/outbound trust from graph edges
+    const inboundEdges = graph.edges.filter(e => e.target === agent.agentId);
+    const outboundEdges = graph.edges.filter(e => e.source === agent.agentId);
+    const inboundTrust = inboundEdges.length > 0
+      ? inboundEdges.reduce((sum, e) => sum + parseFloat(e.amount), 0) / inboundEdges.length
+      : 0;
+    const outboundTrust = outboundEdges.length > 0
+      ? outboundEdges.reduce((sum, e) => sum + parseFloat(e.amount), 0) / outboundEdges.length
+      : 0;
+
+    // Also compute payment volume from graph edges (more accurate than feedback records)
+    const allAgentEdges = graph.edges.filter(e => e.source === agent.agentId || e.target === agent.agentId);
+    const graphPaymentVolume = allAgentEdges.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    const successCount = allAgentEdges.filter(e => e.outcome === 'success').length;
+    const failCount = allAgentEdges.filter(e => e.outcome === 'fail').length;
+    const totalEdges = allAgentEdges.length;
+
     const explanationInput: ExplanationInput = {
       agentId: agent.agentId,
       agentName: profile.name,
       agentRole: profile.role,
       score: scoreInfo.score,
       classification: scoreInfo.classification as ExplanationInput['classification'],
-      jobCount: agentFeedback.length,
-      successRate: agentFeedback.length > 0 ? positiveCount / agentFeedback.length : 0,
-      failureRate: agentFeedback.length > 0 ? negativeCount / agentFeedback.length : 0,
-      paymentVolume: totalPayment,
+      jobCount: totalEdges,
+      successRate: totalEdges > 0 ? successCount / totalEdges : 0,
+      failureRate: totalEdges > 0 ? failCount / totalEdges : 0,
+      paymentVolume: graphPaymentVolume,
       civicFlags: civicFlags.map(f => ({ severity: f.severity, attackType: f.attackType, evidence: f.evidence })),
-      trustGraphPosition: { inboundTrust: trustScore, outboundTrust: trustScore },
+      trustGraphPosition: { inboundTrust, outboundTrust },
       sybilAlerts: agentSybilAlerts,
       stakeWeightedAverage: stakeResult?.weightedAverage ?? 5.0,
     };
@@ -309,12 +338,12 @@ async function main() {
       const explanation = await generateExplanation(explanationInput);
       const stored = await storeExplanation(agent.agentId, explanation);
 
-      // Cache in KV with explanation text
+      // Always cache explanation text in KV for dashboard display
       await cacheReputationWithExplanation(
         agent.agentId,
         scoreInfo.score,
         stored.cid,
-        stored.storedInKV ? explanation : null,
+        explanation,
         stored.cid === null,
       );
 

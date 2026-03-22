@@ -35,6 +35,11 @@ export function classifyAgent(
 /**
  * Synthesize all signals into a single reputation score.
  * Pure function: deterministic, no side effects.
+ *
+ * Input scales:
+ * - stakeWeightedScore: [-1, 1] (weighted average of feedback values)
+ * - trustPropagationScore: [0, 1] (PageRank-style average incoming trust)
+ * Both are normalized to [0, 10] before combination.
  */
 export function synthesizeScore(
   input: ScoreSynthesisInput,
@@ -42,14 +47,20 @@ export function synthesizeScore(
 ): ScoreSynthesisResult {
   const w = weights ?? DEFAULT_WEIGHTS;
 
-  // Base score: weighted average of positive signals, normalized to 0-10 range
+  // Normalize inputs to 0-10 scale
+  // stakeWeightedScore: [-1, 1] -> [0, 10] via (x + 1) * 5
+  const normalizedStake = (input.stakeWeightedScore + 1) * 5;
+  // trustPropagationScore: [0, 1] -> [0, 10] via x * 10
+  const normalizedTrust = input.trustPropagationScore * 10;
+
+  // Base score: weighted average of normalized signals
   const positiveWeightSum = w.stakeWeight + w.trustPropagationWeight;
   const baseScore = positiveWeightSum > 0
-    ? (input.stakeWeightedScore * w.stakeWeight +
-       input.trustPropagationScore * w.trustPropagationWeight) / positiveWeightSum
+    ? (normalizedStake * w.stakeWeight +
+       normalizedTrust * w.trustPropagationWeight) / positiveWeightSum
     : 0;
 
-  // Sybil penalty: sum of confidence-weighted alerts
+  // Sybil penalty: sum of confidence-weighted alerts (on 0-10 scale)
   const sybilPenalty =
     input.sybilAlerts.length > 0
       ? input.sybilAlerts.reduce((sum, a) => sum + a.confidence * 10, 0) /

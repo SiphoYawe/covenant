@@ -1,7 +1,7 @@
 import { getClaudeClient } from '@/lib/ai/client';
 import { createEventBus } from '@/lib/events/bus';
 import { Protocol } from '@/lib/events/types';
-import { kvGet, kvSet } from '@/lib/storage/kv';
+import { kvGet, kvSet, kvLrange } from '@/lib/storage/kv';
 import type {
   PaymentGraph,
   SybilAlert,
@@ -72,8 +72,11 @@ export function extractCircularPayments(
 }
 
 /**
- * Find agents with suspiciously uniform feedback (zero or near-zero variance).
- * Requires at least 3 feedback records per agent to flag.
+ * Find agents with suspiciously uniform feedback (zero variance).
+ * Only flags agents with ALL NEGATIVE uniform feedback (legitimate agents naturally
+ * get all-positive feedback). Also flags mixed but perfectly uniform patterns
+ * (e.g., all exactly 0) as these suggest automation.
+ * Requires at least 5 feedback records per agent to flag.
  */
 export function extractUniformFeedback(
   history: TransactionRecord[]
@@ -89,12 +92,13 @@ export function extractUniformFeedback(
   const results: Array<{ agentId: string; feedbackValues: number[]; variance: number }> = [];
 
   for (const [agentId, values] of grouped) {
-    if (values.length < 3) continue;
+    if (values.length < 5) continue;
     const mean = values.reduce((s, v) => s + v, 0) / values.length;
     const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length;
 
-    // Only flag if variance is exactly 0 (perfectly uniform)
-    if (variance === 0) {
+    // All-positive feedback (mean=1, variance=0) is normal in a healthy marketplace.
+    // Only flag: all-negative (mean <= 0), all-zero, or other suspicious uniform patterns.
+    if (variance === 0 && mean <= 0) {
       results.push({ agentId, feedbackValues: values, variance });
     }
   }
@@ -289,19 +293,36 @@ export async function detectSybilPatterns(
   // Step 2: Check for agent context (Civic flags)
   const agentContexts: AgentContext[] = [];
   for (const agentId of agentIds) {
-    const flags = await kvGet<Array<{ severity: string; attackType: string; evidence: string }>>(
-      `agent:${agentId}:civic-flags`
-    );
-    const feedbackHistory = await kvGet<Array<{ value: number; outcome: string }>>(
-      `agent:${agentId}:feedback-history`
-    );
+    // civic-flags is a Redis LIST (stored via kvLpush), must use kvLrange
+    let flags: Array<{ severity: string; attackType: string; evidence: string }> = [];
+    try {
+      const rawFlags = await kvLrange(`agent:${agentId}:civic-flags`, 0, -1);
+      flags = rawFlags.map(f => {
+        if (typeof f === 'string') {
+          try { return JSON.parse(f); } catch { return f; }
+        }
+        return f;
+      }) as Array<{ severity: string; attackType: string; evidence: string }>;
+    } catch {
+      // Key may not exist or be wrong type
+    }
+
+    let feedbackHistory: Array<{ value: number; outcome: string }> = [];
+    try {
+      const fb = await kvGet<Array<{ value: number; outcome: string }>>(
+        `agent:${agentId}:feedback-history`
+      );
+      feedbackHistory = fb ?? [];
+    } catch {
+      // Key may not exist or be wrong type
+    }
 
     // Include agent context if they have flags or feedback
-    if ((flags && flags.length > 0) || (feedbackHistory && feedbackHistory.length > 0)) {
+    if (flags.length > 0 || feedbackHistory.length > 0) {
       agentContexts.push({
         agentId,
-        civicFlags: flags ?? [],
-        feedbackHistory: feedbackHistory ?? [],
+        civicFlags: flags,
+        feedbackHistory,
       });
     }
   }
