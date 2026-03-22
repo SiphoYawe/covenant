@@ -51,12 +51,12 @@ export function TrustGraph({ showLabels = true, showEdgeLabels = false }: TrustG
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg) return;
-    // Strong charge prevents node clustering
-    fg.d3Force('charge')?.strength(-1200);
-    // Longer link distance keeps connected nodes apart
-    fg.d3Force('link')?.distance(200);
-    // Weak center force to keep graph roughly centered
-    fg.d3Force('center')?.strength(0.02);
+    // Moderate charge keeps nodes from overlapping without excessive spread
+    fg.d3Force('charge')?.strength(-300);
+    // Short link distance pulls connected nodes closer
+    fg.d3Force('link')?.distance(60);
+    // Center force keeps graph roughly centered
+    fg.d3Force('center')?.strength(0.05);
     // Reheat simulation to apply new forces
     fg.d3ReheatSimulation();
     // Auto-fit graph to container after simulation settles
