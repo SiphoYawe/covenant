@@ -10,6 +10,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   SecurityCheckIcon,
   CancelCircleIcon,
+  CheckmarkCircle01Icon,
   Alert02Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons';
@@ -205,11 +206,11 @@ export default function CivicGuardsPage() {
                 bgColor="bg-score-moderate/10"
               />
               <StatCard
-                label="Critical Flags"
-                value={metrics.criticalFlags}
-                icon={CancelCircleIcon}
-                iconColor="text-score-critical"
-                bgColor="bg-score-critical/10"
+                label="L1 Identity Passes"
+                value={metrics.l1Passes}
+                icon={CheckmarkCircle01Icon}
+                iconColor="text-score-excellent"
+                bgColor="bg-score-excellent/10"
               />
             </>
           )}
