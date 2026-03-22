@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
-import { useAgents, useEvents, useCivicMetrics } from '@/stores/dashboard';
+import { useAgents, useEvents, useCivicMetrics, useLoading } from '@/stores/dashboard';
 import { formatTimestamp } from '@/components/dashboard/feed-utils';
 import { Badge } from '@/components/ui/badge';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -107,10 +107,40 @@ function eventToInspection(
   }
 }
 
+function StatCardSkeleton() {
+  return (
+    <div className="bg-card card-elevated rounded-xl p-5 flex items-center gap-4 animate-pulse">
+      <div className="w-10 h-10 rounded-lg bg-muted shrink-0" />
+      <div className="flex-1">
+        <div className="h-3 w-24 rounded bg-muted" />
+        <div className="h-7 w-12 rounded bg-muted mt-2" />
+      </div>
+    </div>
+  );
+}
+
+function TimelineSkeleton() {
+  return (
+    <div>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-5 py-3 border-b border-border animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-muted shrink-0" />
+          <span className="h-4 w-4 rounded bg-muted shrink-0" />
+          <span className="h-4 w-24 rounded bg-muted shrink-0" />
+          <span className="h-5 w-8 rounded bg-muted shrink-0" />
+          <span className="h-4 flex-1 rounded bg-muted" style={{ maxWidth: `${40 + (i % 3) * 15}%` }} />
+          <span className="h-3 w-12 rounded bg-muted shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CivicGuardsPage() {
   const agents = useAgents();
   const events = useEvents();
   const civicMetrics = useCivicMetrics();
+  const loading = useLoading();
 
   // Build inspection timeline from real Civic events in the store
   const inspections = useMemo<CivicInspection[]>(() => {
@@ -151,27 +181,37 @@ export default function CivicGuardsPage() {
 
         {/* Summary stats bar */}
         <div className="grid grid-cols-3 gap-4">
-          <StatCard
-            label="Total Inspections"
-            value={metrics.totalInspections}
-            icon={SecurityCheckIcon}
-            iconColor="text-primary"
-            bgColor="bg-primary/10"
-          />
-          <StatCard
-            label="Layer 2 Catches"
-            value={metrics.l2Catches}
-            icon={Alert02Icon}
-            iconColor="text-score-moderate"
-            bgColor="bg-score-moderate/10"
-          />
-          <StatCard
-            label="Critical Flags"
-            value={metrics.criticalFlags}
-            icon={CancelCircleIcon}
-            iconColor="text-score-critical"
-            bgColor="bg-score-critical/10"
-          />
+          {loading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard
+                label="Total Inspections"
+                value={metrics.totalInspections}
+                icon={SecurityCheckIcon}
+                iconColor="text-primary"
+                bgColor="bg-primary/10"
+              />
+              <StatCard
+                label="Layer 2 Catches"
+                value={metrics.l2Catches}
+                icon={Alert02Icon}
+                iconColor="text-score-moderate"
+                bgColor="bg-score-moderate/10"
+              />
+              <StatCard
+                label="Critical Flags"
+                value={metrics.criticalFlags}
+                icon={CancelCircleIcon}
+                iconColor="text-score-critical"
+                bgColor="bg-score-critical/10"
+              />
+            </>
+          )}
         </div>
 
         {/* Full-width Inspection Timeline */}
@@ -186,7 +226,9 @@ export default function CivicGuardsPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {inspections.length === 0 ? (
+            {loading ? (
+              <TimelineSkeleton />
+            ) : inspections.length === 0 ? (
               <div className="flex items-center justify-center h-40 text-muted-foreground text-base">
                 No Civic inspections yet. Run the seed engine or trigger a live demo to generate real inspections.
               </div>

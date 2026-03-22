@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useMemo } from 'react';
-import { useDashboardStore } from '@/stores/dashboard';
+import { useDashboardStore, useLoading } from '@/stores/dashboard';
 import {
   formatEventDescription,
   formatTimestamp,
@@ -18,8 +18,26 @@ const PROTOCOL_TABS = [
   { key: 'covenant_ai', label: 'Covenant AI' },
 ];
 
+function FeedSkeleton() {
+  return (
+    <div className="flex-1 overflow-hidden">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-start gap-2 py-2.5 px-3 border-b border-border animate-pulse"
+        >
+          <span className="h-3 w-12 rounded bg-muted shrink-0" />
+          <span className="h-4 w-14 rounded bg-muted shrink-0" />
+          <span className="h-3 flex-1 rounded bg-muted" style={{ maxWidth: `${50 + (i % 3) * 20}%` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ActivityFeed() {
   const events = useDashboardStore((s) => s.events);
+  const loading = useLoading();
   const protocolFilter = useDashboardStore((s) => s.protocolFilter);
   const setProtocolFilter = useDashboardStore((s) => s.setProtocolFilter);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,7 +86,9 @@ export function ActivityFeed() {
       </div>
 
       {/* Events list with CSS containment for performance */}
-      {filteredEvents.length === 0 ? (
+      {loading && filteredEvents.length === 0 ? (
+        <FeedSkeleton />
+      ) : filteredEvents.length === 0 ? (
         <div className="flex items-center justify-center flex-1 text-muted-foreground text-sm">
           {protocolFilter === 'all'
             ? 'Waiting for agent activity...'

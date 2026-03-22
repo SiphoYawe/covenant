@@ -7,7 +7,7 @@ import { TrustGraph } from '@/components/dashboard/trust-graph';
 import { AgentDetail } from '@/components/dashboard/agent-detail';
 import { ActivityFeed } from '@/components/dashboard/activity-feed';
 import { useEvents } from '@/hooks/use-events';
-import { useAgents, useMetrics, useDashboardStore } from '@/stores/dashboard';
+import { useAgents, useMetrics, useDashboardStore, useLoading } from '@/stores/dashboard';
 import {
   computeHealthScore,
   formatUSDCCompact,
@@ -53,10 +53,23 @@ function MetricCard({ label, value, icon, iconColor, trend, trendColor }: Metric
   );
 }
 
+function MetricCardSkeleton() {
+  return (
+    <div className="bg-card card-elevated rounded-xl p-5 animate-pulse">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-4 h-4 rounded bg-muted" />
+        <span className="h-3 w-20 rounded bg-muted" />
+      </div>
+      <div className="h-8 w-16 rounded bg-muted" />
+    </div>
+  );
+}
+
 export default function Home() {
   const { status } = useEvents();
   const metrics = useMetrics();
   const agents = useAgents();
+  const loading = useLoading();
   const [showFeed, setShowFeed] = useState(true);
 
   const agentValues = useMemo(() => Object.values(agents), [agents]);
@@ -108,37 +121,48 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Metrics row - 6 metrics */}
+        {/* Metrics row */}
         <div className="grid grid-cols-4 gap-4">
-          <MetricCard
-            label="Total Agents"
-            value={agentValues.length}
-            icon={DashboardSquare01Icon}
-            iconColor="text-primary"
-          />
-          <MetricCard
-            label="USDC Transacted"
-            value={formatUSDCCompact(metrics.totalPayments)}
-            icon={ChartRelationshipIcon}
-            iconColor="text-score-excellent"
-            trend={metrics.totalTransactions > 0 ? `${metrics.totalTransactions} txs` : undefined}
-          />
-          <MetricCard
-            label="Avg Reputation"
-            value={avgReputation.toFixed(1)}
-            icon={SecurityCheckIcon}
-            iconColor="text-primary"
-            trend={healthScore > 0 ? `${healthScore}% health` : undefined}
-            trendColor={healthScore >= 80 ? 'text-score-excellent' : healthScore >= 50 ? 'text-score-moderate' : 'text-score-critical'}
-          />
-          <MetricCard
-            label="Civic Flags"
-            value={sybilAlerts}
-            icon={Shield01Icon}
-            iconColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
-            trend={sybilAlerts > 0 ? 'agents flagged' : 'all clear'}
-            trendColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
-          />
+          {loading ? (
+            <>
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+            </>
+          ) : (
+            <>
+              <MetricCard
+                label="Total Agents"
+                value={agentValues.length}
+                icon={DashboardSquare01Icon}
+                iconColor="text-primary"
+              />
+              <MetricCard
+                label="USDC Transacted"
+                value={formatUSDCCompact(metrics.totalPayments)}
+                icon={ChartRelationshipIcon}
+                iconColor="text-score-excellent"
+                trend={metrics.totalTransactions > 0 ? `${metrics.totalTransactions} txs` : undefined}
+              />
+              <MetricCard
+                label="Avg Reputation"
+                value={avgReputation.toFixed(1)}
+                icon={SecurityCheckIcon}
+                iconColor="text-primary"
+                trend={healthScore > 0 ? `${healthScore}% health` : undefined}
+                trendColor={healthScore >= 80 ? 'text-score-excellent' : healthScore >= 50 ? 'text-score-moderate' : 'text-score-critical'}
+              />
+              <MetricCard
+                label="Civic Flags"
+                value={sybilAlerts}
+                icon={Shield01Icon}
+                iconColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
+                trend={sybilAlerts > 0 ? 'agents flagged' : 'all clear'}
+                trendColor={sybilAlerts > 0 ? 'text-score-critical' : 'text-score-excellent'}
+              />
+            </>
+          )}
         </div>
 
         {/* Content area */}

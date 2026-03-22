@@ -204,8 +204,8 @@ let _gateway: CivicGateway | null = null;
 export function getCivicGateway(): CivicGateway {
   if (!_gateway) {
     _gateway = new CivicGateway({
-      endpoint: env.CIVIC_MCP_ENDPOINT,
-      token: env.CIVIC_TOKEN,
+      endpoint: env.CIVIC_MCP_ENDPOINT ?? '',
+      token: env.CIVIC_TOKEN ?? '',
       timeout: 10000,
     });
   }

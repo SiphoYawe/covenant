@@ -201,11 +201,11 @@ export function AgentDetail() {
             <span className="uppercase text-xs font-medium text-muted-foreground tracking-wider">
               AI Explanation
             </span>
-            <p className="text-muted-foreground text-xs leading-relaxed mt-1">
+            <div className="text-muted-foreground text-xs leading-relaxed mt-1 whitespace-pre-line">
               {agent.explanation
                 ? agent.explanation
                 : 'Awaiting first assessment from the reputation engine.'}
-            </p>
+            </div>
           </div>
         </motion.div>
       )}

@@ -57,6 +57,7 @@ export type DashboardState = {
   metrics: EconomicMetrics;
   civicMetrics: CivicMetrics;
   demoState: DemoState;
+  loading: boolean;
   selectedAgentId: string | null;
   filterBy: FilterBy;
   sortBy: SortBy;
@@ -110,6 +111,7 @@ const initialState: DashboardState = {
   demoState: {
     status: 'idle',
   },
+  loading: true,
   selectedAgentId: null,
   filterBy: 'all',
   sortBy: 'score',
@@ -286,6 +288,7 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
   },
 
   loadInitialState: async () => {
+    set({ loading: true });
     try {
       const res = await fetch('/api/dashboard');
       if (!res.ok) return;
@@ -307,6 +310,8 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
       });
     } catch {
       // API failed, dashboard stays empty until SSE populates
+    } finally {
+      set({ loading: false });
     }
   },
 
@@ -366,6 +371,9 @@ export const useEdges = () =>
 
 export const useCivicMetrics = () =>
   useDashboardStore(useShallow((s) => s.civicMetrics));
+
+export const useLoading = () =>
+  useDashboardStore((s) => s.loading);
 
 export const useSelectedAgentId = () =>
   useDashboardStore((s) => s.selectedAgentId);

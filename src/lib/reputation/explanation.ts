@@ -10,13 +10,30 @@ import type {
 } from './types';
 
 /**
+ * Strip markdown formatting from explanation text, keeping line breaks.
+ */
+export function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')   // **bold** -> bold
+    .replace(/\*([^*]+)\*/g, '$1')        // *italic* -> italic
+    .replace(/__([^_]+)__/g, '$1')        // __bold__ -> bold
+    .replace(/_([^_]+)_/g, '$1')          // _italic_ -> italic
+    .replace(/^#{1,6}\s+/gm, '')          // # headers -> plain
+    .replace(/^[-*+]\s+/gm, '')           // - bullet -> plain
+    .replace(/^\d+\.\s+/gm, '')           // 1. numbered -> plain
+    .replace(/`([^`]+)`/g, '$1')          // `code` -> code
+    .replace(/^>\s+/gm, '')              // > blockquote -> plain
+    .trim();
+}
+
+/**
  * Generate a natural language explanation for a reputation score using Claude.
  * Contextual, not templated: AI reasons about the specific signal combination.
  */
 export async function generateExplanation(input: ExplanationInput): Promise<string> {
   const claude = getClaudeClient();
 
-  const systemPrompt = `You are writing concise, contextual reputation explanations for AI agents in an ERC-8004 marketplace. Each explanation should reference specific signal values. Be direct and factual. Use this format: "Agent Name: score/10. Key facts about their performance." Keep it under 200 words.`;
+  const systemPrompt = `You are writing concise, contextual reputation explanations for AI agents in an ERC-8004 marketplace. Each explanation should reference specific signal values. Be direct and factual. Use this format: "Agent Name: score/10. Key facts about their performance." Keep it under 200 words. IMPORTANT: Do not use any markdown formatting. No asterisks, no bold, no italic, no headers, no bullet points with dashes or stars. Use plain text only. Line breaks are fine for readability.`;
 
   const userMessage = `Generate a reputation explanation for this agent:
 
@@ -42,7 +59,7 @@ ${input.sybilAlerts.length > 0 ? `Sybil alerts: ${input.sybilAlerts.map((a) => `
     return `${input.agentName}: ${input.score}/10`;
   }
 
-  return (text as { type: 'text'; text: string }).text;
+  return stripMarkdown((text as { type: 'text'; text: string }).text);
 }
 
 /**

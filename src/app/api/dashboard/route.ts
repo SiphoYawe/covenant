@@ -1,6 +1,7 @@
 import { kv } from '@/lib/storage/kv';
 import { createEventBus } from '@/lib/events';
 import { NextResponse } from 'next/server';
+import { stripMarkdown } from '@/lib/reputation/explanation';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,11 +103,11 @@ export async function GET() {
     // Try deferred KV explanation first, then cached reputation
     const deferred = await kv.get<{ explanation: string }>(`agent:${node.agentId}:explanation-deferred`);
     if (deferred?.explanation) {
-      explanationMap.set(node.agentId, deferred.explanation);
+      explanationMap.set(node.agentId, stripMarkdown(deferred.explanation));
     } else {
       const cached = await kv.get<{ explanationText?: string | null }>(`agent:${node.agentId}:reputation`);
       if (cached?.explanationText) {
-        explanationMap.set(node.agentId, cached.explanationText);
+        explanationMap.set(node.agentId, stripMarkdown(cached.explanationText));
       }
     }
   }

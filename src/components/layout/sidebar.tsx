@@ -11,6 +11,7 @@ import {
   RoboticIcon,
   ChartRelationshipIcon,
   AffiliateIcon,
+  Activity01Icon,
   PlayIcon,
   Shield01Icon,
   RocketIcon,
@@ -32,6 +33,7 @@ const navigationItems: NavItem[] = [
   { label: 'Agents', href: '/agents', icon: RoboticIcon },
   { label: 'Trust Graph', href: '/trust-graph', icon: ChartRelationshipIcon },
   { label: 'Payments', href: '/payments', icon: AffiliateIcon },
+  { label: 'Activity', href: '/activity', icon: Activity01Icon },
 ];
 
 const demoItems: NavItem[] = [
@@ -91,7 +93,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex flex-col w-60 shrink-0 bg-sidebar border-r border-sidebar-border overflow-hidden">
+    <aside className="flex flex-col w-60 shrink-0 bg-sidebar border-r border-sidebar-border overflow-visible">
       {/* Header: Logo */}
       <div className="p-6">
         <Image
@@ -123,7 +125,7 @@ export function Sidebar() {
       </div>
 
       {/* User Auth */}
-      <div className="px-4 py-3 border-t border-sidebar-border">
+      <div className="px-4 py-3 border-t border-sidebar-border relative">
         <UserButton />
       </div>
     </aside>

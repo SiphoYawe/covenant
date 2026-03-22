@@ -36,56 +36,60 @@ export function formatEventDescription(event: DemoEvent): string {
 
   switch (event.type) {
     case 'agent:registered':
-      return `Agent ${agent} registered on ERC-8004`;
+      return `${agent} registered on ERC-8004`;
     case 'agent:metadata-stored':
-      return `Agent ${agent} metadata stored on IPFS`;
+      return `${agent} metadata pinned to IPFS`;
     case 'task:requested':
-      return `Agent ${agent} requested a task`;
+      return `${agent} submitted a task request`;
     case 'task:negotiated': {
       const target = (d.targetName as string) || event.targetAgentId?.slice(0, 8) || 'unknown';
-      const price = d.price ?? '?';
-      return `Agent ${agent} negotiated with ${target} at ${price} USDC`;
+      const price = d.price ?? d.agreedPrice ?? d.amount;
+      const priceStr = price != null ? `${price} USDC` : 'terms agreed';
+      return `${agent} negotiated with ${target}: ${priceStr}`;
     }
     case 'task:delivered':
-      return `Agent ${agent} delivered task results`;
+      return `${agent} delivered task results`;
     case 'task:accepted':
-      return `Agent ${agent} accepted delivery`;
+      return `${agent} accepted delivery`;
     case 'task:rejected':
-      return `Agent ${agent} rejected delivery`;
-    case 'payment:initiated':
-      return `Payment initiated: ${d.amount ?? '?'} USDC`;
+      return `${agent} rejected delivery`;
+    case 'payment:initiated': {
+      const amt = d.amount ?? d.usdcAmount;
+      return `Payment initiated${amt != null ? `: ${amt} USDC` : ''}`;
+    }
     case 'payment:settled': {
       const target = (d.payeeName as string) || event.targetAgentId?.slice(0, 8) || 'unknown';
-      return `Agent ${agent} paid ${target} ${d.amount ?? '?'} USDC via x402`;
+      const amt = d.amount ?? d.usdcAmount;
+      return `${agent} paid ${target} ${amt != null ? `${amt} USDC` : ''} via x402`;
     }
     case 'payment:failed':
       return `Payment failed: ${d.reason ?? 'unknown error'}`;
     case 'civic:identity-checked':
-      return `Civic identity check on Agent ${agent}`;
+      return `Civic L1 identity check on ${agent}`;
     case 'civic:behavioral-checked':
-      return `Civic behavioral check on Agent ${agent}`;
+      return `Civic L2 behavioral scan on ${agent}`;
     case 'civic:flagged':
-      return `Civic flagged Agent ${agent}: ${d.attackType ?? 'suspicious behavior'} (${d.severity ?? 'warning'})`;
+      return `Civic flagged ${agent}: ${d.attackType ?? 'suspicious behavior'} (${d.severity ?? 'warning'})`;
     case 'civic:cleared':
-      return `Agent ${agent} cleared by Civic`;
+      return `${agent} cleared by Civic`;
     case 'reputation:computing':
-      return `Computing reputation for Agent ${agent}`;
+      return `Computing reputation for ${agent}`;
     case 'reputation:updated':
-      return `Agent ${agent} reputation updated to ${d.reputationScore ?? '?'}/10`;
+      return `${agent} reputation updated to ${d.reputationScore ?? '?'}/10`;
     case 'reputation:explanation-stored':
-      return `Reputation explanation stored for Agent ${agent}`;
+      return `AI explanation stored for ${agent}`;
     case 'feedback:submitted':
-      return `Feedback submitted for Agent ${agent}`;
+      return `Feedback submitted for ${agent}`;
     case 'feedback:recorded-onchain':
-      return `Feedback recorded on-chain for Agent ${agent}`;
+      return `Feedback recorded on-chain for ${agent}`;
     case 'demo:act-changed':
       return `Demo Act ${d.act ?? '?'}: ${d.status ?? 'started'}`;
     case 'demo:reset':
-      return 'Demo reset';
+      return 'Demo state reset';
     case 'demo:complete':
-      return 'Demo complete';
+      return 'Demo sequence complete';
     default:
-      return `${event.type} event for Agent ${agent}`;
+      return `${event.type.split(':').pop()} for ${agent}`;
   }
 }
 
