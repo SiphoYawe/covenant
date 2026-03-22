@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { kvStore, zaddCalls, clearKvStore, createKvMock } from '../../../helpers/kv-mock';
 
 const TEST_KEYS = {
   AGENT_A_PRIVATE_KEY: '0x' + '01'.repeat(32),
@@ -19,32 +20,8 @@ vi.mock('@/lib/config/env', () => ({
   env: TEST_KEYS,
 }));
 
-// In-memory KV mock
-const kvStore = new Map<string, unknown>();
-const kvLists = new Map<string, string[]>();
-
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => kvStore.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => {
-      kvStore.set(key, value);
-    }),
-    del: vi.fn(async (key: string) => {
-      kvStore.delete(key);
-    }),
-    lpush: vi.fn(async (key: string, value: string) => {
-      const list = kvLists.get(key) ?? [];
-      list.unshift(value);
-      kvLists.set(key, list);
-    }),
-    lrange: vi.fn(async (key: string, start: number, end: number) => {
-      const list = kvLists.get(key) ?? [];
-      return list.slice(start, end === -1 ? undefined : end + 1);
-    }),
-    zadd: vi.fn(async () => {}),
-    zrange: vi.fn(async () => []),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 // Mock agent0-sdk
 const mockWaitMined = vi.fn().mockResolvedValue({ receipt: { transactionHash: '0xabc123' }, result: {} });
@@ -68,8 +45,7 @@ vi.mock('agent0-sdk', () => ({
 
 describe('Agent Registration (identity.ts)', () => {
   beforeEach(() => {
-    kvStore.clear();
-    kvLists.clear();
+    clearKvStore();
     mockCreateAgent.mockClear();
     mockRegisterOnChain.mockClear();
     mockWaitMined.mockClear();
@@ -92,17 +68,19 @@ describe('Agent Registration (identity.ts)', () => {
     const { registerAgent } = await import('@/lib/protocols/erc8004/identity');
     await registerAgent('reviewer');
 
-    const profile = kvStore.get('agent:42:profile');
-    expect(profile).toBeDefined();
-    expect((profile as Record<string, unknown>).role).toBe('reviewer');
-    expect((profile as Record<string, unknown>).agentId).toBe('42');
+    const entry = kvStore.get('agent:42:profile');
+    expect(entry).toBeDefined();
+    const profile = entry!.value as Record<string, unknown>;
+    expect(profile.role).toBe('reviewer');
+    expect(profile.agentId).toBe('42');
   });
 
   it('registerAgent adds agent to demo:agents list', async () => {
     const { registerAgent } = await import('@/lib/protocols/erc8004/identity');
     await registerAgent('summarizer');
 
-    const agents = kvLists.get('demo:agents');
+    const entry = kvStore.get('demo:agents');
+    const agents = entry ? (entry.value as string[]) : [];
     expect(agents).toContain('42');
   });
 
@@ -111,8 +89,7 @@ describe('Agent Registration (identity.ts)', () => {
     await registerAgent('malicious');
 
     // Event bus uses kv.zadd — check it was called
-    const { kv } = await import('@vercel/kv');
-    expect(kv.zadd).toHaveBeenCalled();
+    expect(zaddCalls.length).toBeGreaterThan(0);
   });
 
   it('registerAgent throws on SDK failure', async () => {
@@ -125,8 +102,7 @@ describe('Agent Registration (identity.ts)', () => {
 
 describe('Agent Queries (identity.ts)', () => {
   beforeEach(() => {
-    kvStore.clear();
-    kvLists.clear();
+    clearKvStore();
     mockGetAgent.mockClear();
     vi.resetModules();
   });
@@ -138,7 +114,7 @@ describe('Agent Queries (identity.ts)', () => {
       address: '0x1234',
       metadataURI: 'ipfs://test',
     };
-    kvStore.set('agent:99:profile', profile);
+    kvStore.set('agent:99:profile', { value: profile });
 
     const { getAgent } = await import('@/lib/protocols/erc8004/identity');
     const result = await getAgent('99');
@@ -182,9 +158,9 @@ describe('Agent Queries (identity.ts)', () => {
   });
 
   it('getAllAgents returns all registered agents', async () => {
-    kvLists.set('demo:agents', ['10', '20']);
-    kvStore.set('agent:10:profile', { agentId: '10', role: 'researcher', address: '0x1', metadataURI: '' });
-    kvStore.set('agent:20:profile', { agentId: '20', role: 'reviewer', address: '0x2', metadataURI: '' });
+    kvStore.set('demo:agents', { value: ['10', '20'] });
+    kvStore.set('agent:10:profile', { value: { agentId: '10', role: 'researcher', address: '0x1', metadataURI: '' } });
+    kvStore.set('agent:20:profile', { value: { agentId: '20', role: 'reviewer', address: '0x2', metadataURI: '' } });
 
     const { getAllAgents } = await import('@/lib/protocols/erc8004/identity');
     const agents = await getAllAgents();

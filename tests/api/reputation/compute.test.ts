@@ -1,14 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// Mock @vercel/kv before any imports
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    zadd: vi.fn().mockResolvedValue(1),
-    zrange: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue('OK'),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 import { POST } from '@/app/api/reputation/compute/route';
 
@@ -23,6 +17,7 @@ function makeRequest(body: unknown): Request {
 describe('POST /api/reputation/compute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearKvStore();
   });
 
   test('returns 200 with computing status for valid agentId', async () => {

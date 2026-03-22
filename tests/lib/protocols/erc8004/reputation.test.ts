@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { clearKvStore, createKvMock } from '../../../helpers/kv-mock';
 
 // Mock agent0-sdk — sdk.giveFeedback(agentId, value, tag1, tag2, endpoint, feedbackFile)
 const mockGiveFeedback = vi.fn();
@@ -30,18 +31,12 @@ vi.mock('@/lib/events/bus', () => ({
   createEventBus: () => ({ emit: mockEmit, since: vi.fn() }),
 }));
 
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    set: vi.fn(),
-    get: vi.fn(),
-    zadd: vi.fn(),
-    zrange: vi.fn().mockResolvedValue([]),
-  },
-}));
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 describe('On-Chain Feedback Submission (Story 3.4)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearKvStore();
     mockGiveFeedback.mockResolvedValue({
       hash: '0xfeedback_tx_hash_123',
       waitMined: vi.fn().mockResolvedValue({

@@ -1,14 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { zaddCalls, clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// Mock @vercel/kv before any imports that use it
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    zadd: vi.fn().mockResolvedValue(1),
-    zrange: vi.fn().mockResolvedValue([]),
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue('OK'),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 import {
   triggerReputationPipeline,
@@ -19,6 +13,7 @@ import type { ReputationFeedbackEvent } from '@/lib/reputation/types';
 describe('Reputation Engine', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearKvStore();
   });
 
   describe('parseFeedbackEvent', () => {
@@ -97,8 +92,6 @@ describe('Reputation Engine', () => {
     });
 
     test('emits reputation:computing event to event bus', async () => {
-      const { kv } = await import('@vercel/kv');
-
       const feedbackEvent: ReputationFeedbackEvent = {
         targetAgentId: 'agent-c',
         feedbackValue: 1,
@@ -111,7 +104,7 @@ describe('Reputation Engine', () => {
       await triggerReputationPipeline(feedbackEvent);
 
       // Event bus uses kv.zadd to store events
-      expect(kv.zadd).toHaveBeenCalled();
+      expect(zaddCalls.length).toBeGreaterThan(0);
     });
   });
 });

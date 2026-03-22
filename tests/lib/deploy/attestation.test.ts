@@ -1,33 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { kvStore, zaddCalls, clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// --- In-memory KV mock ---
-const kvStore = new Map<string, { value: unknown; expiresAt?: number }>();
-
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => {
-      const entry = kvStore.get(key);
-      if (!entry) return null;
-      if (entry.expiresAt && Date.now() > entry.expiresAt) {
-        kvStore.delete(key);
-        return null;
-      }
-      return entry.value;
-    }),
-    set: vi.fn(async (key: string, value: unknown, options?: { ex?: number }) => {
-      const entry: { value: unknown; expiresAt?: number } = { value };
-      if (options?.ex) {
-        entry.expiresAt = Date.now() + options.ex * 1000;
-      }
-      kvStore.set(key, entry);
-    }),
-    del: vi.fn(async (key: string) => {
-      kvStore.delete(key);
-    }),
-    zadd: vi.fn(async () => {}),
-    zrange: vi.fn(async () => []),
-  },
-}));
+// --- Mock KV at the abstraction boundary ---
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 // --- Mock ERC-8004 SDK ---
 const mockWaitMined = vi.fn().mockResolvedValue({ receipt: { transactionHash: '0xattest123' } });
@@ -60,7 +35,7 @@ vi.mock('@/lib/wallets', () => ({
 
 describe('Reputation Attestation', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     vi.clearAllMocks();
     mockGiveFeedback.mockResolvedValue({ waitMined: mockWaitMined, hash: '0xattest123' });
     mockWaitMined.mockResolvedValue({ receipt: { transactionHash: '0xattest123' } });
@@ -111,11 +86,9 @@ describe('Reputation Attestation', () => {
       const { writeDeployerAttestation } = await import('@/lib/deploy/attestation');
       await writeDeployerAttestation(testAgentId, testDeployerAddress);
 
-      const { kv } = await import('@vercel/kv');
-      const zaddCalls = (kv.zadd as ReturnType<typeof vi.fn>).mock.calls;
       expect(zaddCalls.length).toBeGreaterThan(0);
       const lastCall = zaddCalls[zaddCalls.length - 1];
-      const event = JSON.parse(lastCall[1].member);
+      const event = JSON.parse((lastCall[1] as { member: string }).member);
       expect(event.type).toBe('deployer:reputation-linked');
     });
   });

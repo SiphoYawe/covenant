@@ -1,18 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { kvStore, clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// Mock @vercel/kv
-const kvStore = new Map<string, unknown>();
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => kvStore.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => { kvStore.set(key, value); }),
-    del: vi.fn(async (key: string) => { kvStore.delete(key); }),
-    lpush: vi.fn(),
-    lrange: vi.fn().mockResolvedValue([]),
-    zadd: vi.fn().mockResolvedValue(1),
-    zrange: vi.fn().mockResolvedValue([]),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 import {
   buildGraph,
@@ -43,7 +33,7 @@ function makeProof(
 
 describe('Payment Graph Construction', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     vi.clearAllMocks();
   });
 

@@ -1,18 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { kvStore, zaddCalls, clearKvStore, createKvMock } from '../../../helpers/kv-mock';
 
-// Mock @vercel/kv
-const kvStore = new Map<string, unknown>();
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => kvStore.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => { kvStore.set(key, value); }),
-    del: vi.fn(async (key: string) => { kvStore.delete(key); }),
-    lpush: vi.fn(),
-    lrange: vi.fn().mockResolvedValue([]),
-    zadd: vi.fn().mockResolvedValue(1),
-    zrange: vi.fn().mockResolvedValue([]),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 // Mock the SDK
 const mockGiveFeedback = vi.fn();
@@ -58,7 +48,7 @@ function makeResponseData(overrides: Partial<AppendResponseData> = {}): AppendRe
 
 describe('On-Chain Write-Back', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     vi.clearAllMocks();
     mockGiveFeedback.mockResolvedValue({
       hash: '0xtxhash123',
@@ -92,22 +82,21 @@ describe('On-Chain Write-Back', () => {
     });
 
     test('emits reputation:updated event with correct shape after successful write', async () => {
-      const { kv } = await import('@vercel/kv');
       const data = makeResponseData();
 
       await appendReputationResponse(data);
 
       // Event bus uses kv.zadd to store events
-      expect(kv.zadd).toHaveBeenCalled();
+      expect(zaddCalls.length).toBeGreaterThan(0);
     });
 
     test('KV cache is updated at agent:{agentId}:reputation', async () => {
-      const { kv } = await import('@vercel/kv');
       const data = makeResponseData();
 
       await appendReputationResponse(data);
 
-      const setCall = vi.mocked(kv.set).mock.calls.find((c) => c[0] === 'agent:agent-b:reputation');
+      const { kvSet } = await import('@/lib/storage/kv');
+      const setCall = vi.mocked(kvSet).mock.calls.find((c) => c[0] === 'agent:agent-b:reputation');
       expect(setCall).toBeDefined();
       const cached = setCall![1] as CachedReputation;
       expect(cached.score).toBe(8.5);

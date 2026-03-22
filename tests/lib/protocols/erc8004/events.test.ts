@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { kvStore, clearKvStore, createKvMock } from '../../../helpers/kv-mock';
 
 vi.mock('@/lib/config/env', () => ({
   env: {
@@ -22,17 +23,8 @@ vi.mock('@/lib/events/bus', () => ({
   createEventBus: () => ({ emit: mockEmit, since: vi.fn() }),
 }));
 
-// Mock KV for last processed block tracking
-const mockKvGet = vi.fn();
-const mockKvSet = vi.fn();
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: mockKvGet,
-    set: mockKvSet,
-    zadd: vi.fn(),
-    zrange: vi.fn().mockResolvedValue([]),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 // Mock viem for on-chain event watching
 const mockGetLogs = vi.fn();
@@ -52,8 +44,8 @@ vi.mock('viem', async () => {
 describe('On-Chain Event Listener (Story 3.4)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearKvStore();
     mockGetBlockNumber.mockResolvedValue(100000n);
-    mockKvGet.mockResolvedValue(null);
   });
 
   describe('pollFeedbackEvents', () => {
@@ -104,11 +96,12 @@ describe('On-Chain Event Listener (Story 3.4)', () => {
       const { pollFeedbackEvents } = await import('@/lib/protocols/erc8004/events');
       await pollFeedbackEvents();
 
-      expect(mockKvSet).toHaveBeenCalledWith('erc8004:feedback:lastBlock', 100050);
+      const { kv } = await import('@/lib/storage/kv');
+      expect(kv.set).toHaveBeenCalledWith('erc8004:feedback:lastBlock', 100050);
     });
 
     it('resumes from last processed block on restart', async () => {
-      mockKvGet.mockResolvedValueOnce(99000);
+      kvStore.set('erc8004:feedback:lastBlock', { value: 99000 });
       mockGetLogs.mockResolvedValueOnce([]);
 
       const { pollFeedbackEvents } = await import('@/lib/protocols/erc8004/events');

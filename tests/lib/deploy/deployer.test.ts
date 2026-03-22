@@ -1,37 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { kvStore, clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// --- In-memory KV mock ---
-const kvStore = new Map<string, { value: unknown; expiresAt?: number }>();
-
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => {
-      const entry = kvStore.get(key);
-      if (!entry) return null;
-      if (entry.expiresAt && Date.now() > entry.expiresAt) {
-        kvStore.delete(key);
-        return null;
-      }
-      return entry.value;
-    }),
-    set: vi.fn(async (key: string, value: unknown, options?: { ex?: number }) => {
-      const entry: { value: unknown; expiresAt?: number } = { value };
-      if (options?.ex) {
-        entry.expiresAt = Date.now() + options.ex * 1000;
-      }
-      kvStore.set(key, entry);
-    }),
-    del: vi.fn(async (key: string) => {
-      kvStore.delete(key);
-    }),
-    zadd: vi.fn(async () => {}),
-    zrange: vi.fn(async () => []),
-  },
-}));
+// --- Mock KV at the abstraction boundary ---
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 describe('Deployer Profile Management', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     vi.clearAllMocks();
   });
 
@@ -52,7 +27,6 @@ describe('Deployer Profile Management', () => {
     it('returns existing profile when one exists', async () => {
       const { getOrCreateDeployerProfile } = await import('@/lib/deploy/deployer');
 
-      // Create initial profile
       const first = await getOrCreateDeployerProfile(testAddress);
       expect(first.deployerScore).toBe(5.0);
 
@@ -78,7 +52,6 @@ describe('Deployer Profile Management', () => {
     it('appends agent to deployer linked agents list', async () => {
       const { getOrCreateDeployerProfile, addLinkedAgent } = await import('@/lib/deploy/deployer');
       await getOrCreateDeployerProfile(testAddress);
-
       await addLinkedAgent(testAddress, 'agent-1');
 
       const stored = kvStore.get(`deployer:${testAddress}:profile`);
@@ -90,7 +63,6 @@ describe('Deployer Profile Management', () => {
     it('stores reverse lookup from agent to deployer', async () => {
       const { getOrCreateDeployerProfile, addLinkedAgent } = await import('@/lib/deploy/deployer');
       await getOrCreateDeployerProfile(testAddress);
-
       await addLinkedAgent(testAddress, 'agent-1');
 
       const reverse = kvStore.get('agent:agent-1:deployer');
@@ -159,6 +131,26 @@ describe('Deployer Profile Management', () => {
       const { getDeployerForAgent } = await import('@/lib/deploy/deployer');
       const deployer = await getDeployerForAgent('unknown-agent');
       expect(deployer).toBeNull();
+    });
+  });
+
+  describe('updateDeployerProfile', () => {
+    it('updates deployer score', async () => {
+      const { getOrCreateDeployerProfile, updateDeployerProfile, getDeployerProfile } = await import('@/lib/deploy/deployer');
+      await getOrCreateDeployerProfile(testAddress);
+      await updateDeployerProfile(testAddress, { deployerScore: 8.5 });
+
+      const profile = await getDeployerProfile(testAddress);
+      expect(profile!.deployerScore).toBe(8.5);
+    });
+
+    it('updates flagged agents count', async () => {
+      const { getOrCreateDeployerProfile, updateDeployerProfile, getDeployerProfile } = await import('@/lib/deploy/deployer');
+      await getOrCreateDeployerProfile(testAddress);
+      await updateDeployerProfile(testAddress, { flaggedAgents: 2 });
+
+      const profile = await getDeployerProfile(testAddress);
+      expect(profile!.flaggedAgents).toBe(2);
     });
   });
 });

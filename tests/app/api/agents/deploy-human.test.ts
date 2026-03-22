@@ -1,35 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { kvStore, zaddCalls, clearKvStore, createKvMock } from '../../../helpers/kv-mock';
 
-// --- In-memory KV mock ---
-const kvStore = new Map<string, { value: unknown; expiresAt?: number }>();
-
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => {
-      const entry = kvStore.get(key);
-      if (!entry) return null;
-      if (entry.expiresAt && Date.now() > entry.expiresAt) {
-        kvStore.delete(key);
-        return null;
-      }
-      return entry.value;
-    }),
-    set: vi.fn(async (key: string, value: unknown, options?: { ex?: number }) => {
-      const entry: { value: unknown; expiresAt?: number } = { value };
-      if (options?.ex) {
-        entry.expiresAt = Date.now() + options.ex * 1000;
-      }
-      kvStore.set(key, entry);
-    }),
-    del: vi.fn(async (key: string) => {
-      kvStore.delete(key);
-    }),
-    lpush: vi.fn(async (key: string, value: string) => {}),
-    lrange: vi.fn(async () => []),
-    zadd: vi.fn(async () => {}),
-    zrange: vi.fn(async () => []),
-  },
-}));
+// --- Mock KV at the abstraction boundary ---
+vi.mock('@/lib/storage/kv', () => createKvMock());
+vi.mock('@/lib/storage', async () => {
+  const kvMock = createKvMock();
+  return {
+    kvGet: kvMock.kvGet,
+    kvSet: kvMock.kvSet,
+    kvDel: kvMock.kvDel,
+    kvLpush: kvMock.kvLpush,
+    kvLrange: kvMock.kvLrange,
+    kvScan: kvMock.kvScan,
+    pin: vi.fn(async () => 'QmTestCid'),
+    get: vi.fn(async () => null),
+  };
+});
 
 // --- Env mock ---
 const TEST_ENV = {
@@ -120,7 +106,7 @@ const validHumanBody = {
 
 describe('POST /api/agents/deploy (human mode)', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     vi.clearAllMocks();
     mockUser = { id: 'civic-user-1', email: 'test@test.com' };
     mockWallets = [humanWalletAddress];
@@ -133,40 +119,30 @@ describe('POST /api/agents/deploy (human mode)', () => {
   describe('Authentication', () => {
     it('returns 401 when no Civic session', async () => {
       mockUser = null;
-
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest(validHumanBody));
-      const body = await response.json();
-
       expect(response.status).toBe(401);
-      expect(body.error.code).toBe('AUTH_REQUIRED');
+      expect((await response.json()).error.code).toBe('AUTH_REQUIRED');
     });
 
     it('returns 400 when no embedded wallets found', async () => {
       mockWallets = [];
-
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest(validHumanBody));
-      const body = await response.json();
-
       expect(response.status).toBe(400);
-      expect(body.error.code).toBe('NO_WALLET');
+      expect((await response.json()).error.code).toBe('NO_WALLET');
     });
   });
 
   describe('Deployment with useOwnWallet', () => {
     it('uses embedded wallet as agent wallet when useOwnWallet is true', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
-      const response = await POST(createRequest({
-        ...validHumanBody,
-        useOwnWallet: true,
-      }));
+      const response = await POST(createRequest({ ...validHumanBody, useOwnWallet: true }));
       const body = await response.json();
 
       expect(response.status).toBe(201);
       expect(body.address).toBe(humanWalletAddress);
       expect(body.humanAddress).toBe(humanWalletAddress);
-      // Should NOT call fundFromPool
       expect(mockSystemWriteContract).not.toHaveBeenCalled();
     });
   });
@@ -180,28 +156,33 @@ describe('POST /api/agents/deploy (human mode)', () => {
       expect(response.status).toBe(201);
       expect(body.agentId).toBe('42');
       expect(body.humanAddress).toBe(humanWalletAddress);
-      // Should call fundFromPool (via writeContract on system wallet)
       expect(mockSystemWriteContract).toHaveBeenCalled();
+    });
+
+    it('returns 503 when pool balance insufficient', async () => {
+      const { getPublicClient } = await import('@/lib/wallets/manager');
+      (getPublicClient as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        readContract: vi.fn().mockResolvedValue(BigInt(1_000_000)),
+      });
+
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest(validHumanBody));
+      expect(response.status).toBe(503);
     });
   });
 
   describe('Reputation linking', () => {
     it('writes attestation when linkReputation is true', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
-      const response = await POST(createRequest({
-        ...validHumanBody,
-        linkReputation: true,
-      }));
+      const response = await POST(createRequest({ ...validHumanBody, linkReputation: true }));
       const body = await response.json();
 
       expect(response.status).toBe(201);
       expect(body.linkedReputation).toBe(true);
 
-      // Attestation should be stored in KV
       const attestation = kvStore.get(`agent:${body.agentId}:deployer-attestation`);
       expect(attestation).toBeDefined();
 
-      // Deployer profile should be created with linked agent
       const profile = kvStore.get(`deployer:${humanWalletAddress}:profile`);
       expect(profile).toBeDefined();
       const profileValue = profile!.value as { linkedAgents: string[] };
@@ -215,39 +196,24 @@ describe('POST /api/agents/deploy (human mode)', () => {
 
       expect(response.status).toBe(201);
       expect(body.linkedReputation).toBe(false);
-
-      // No attestation
-      const attestation = kvStore.get(`agent:${body.agentId}:deployer-attestation`);
-      expect(attestation).toBeUndefined();
+      expect(kvStore.has(`agent:${body.agentId}:deployer-attestation`)).toBe(false);
     });
-  });
 
-  describe('Events', () => {
-    it('emits AGENT_DEPLOYED_HUMAN event', async () => {
+    it('stores reverse lookup from agent to deployer', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
-      await POST(createRequest(validHumanBody));
+      const response = await POST(createRequest({ ...validHumanBody, linkReputation: true }));
+      const body = await response.json();
 
-      const { kv } = await import('@vercel/kv');
-      const zaddCalls = (kv.zadd as ReturnType<typeof vi.fn>).mock.calls;
-      // Find the human deploy event
-      const deployEvent = zaddCalls.find((call) => {
-        const event = JSON.parse(call[1].member);
-        return event.type === 'agent:deployed-human';
-      });
-      expect(deployEvent).toBeDefined();
-      const event = JSON.parse(deployEvent![1].member);
-      expect(event.data.mode).toBe('human');
-      expect(event.data.humanAddress).toBe(humanWalletAddress);
+      const deployer = kvStore.get(`agent:${body.agentId}:deployer`);
+      expect(deployer).toBeDefined();
+      expect(deployer!.value).toBe(humanWalletAddress);
     });
   });
 
   describe('Response shape', () => {
     it('returns HumanDeployResponse with all fields', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
-      const response = await POST(createRequest({
-        ...validHumanBody,
-        linkReputation: true,
-      }));
+      const response = await POST(createRequest({ ...validHumanBody, linkReputation: true }));
       const body = await response.json();
 
       expect(response.status).toBe(201);
@@ -256,6 +222,48 @@ describe('POST /api/agents/deploy (human mode)', () => {
       expect(body.humanAddress).toBe(humanWalletAddress);
       expect(body.linkedReputation).toBe(true);
       expect(body.agentCard).toBeDefined();
+    });
+
+    it('includes agent card with correct metadata', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest(validHumanBody));
+      const body = await response.json();
+
+      expect(body.agentCard.name).toBe('Human Agent');
+      expect(body.agentCard.description).toBe('An agent deployed by a human');
+    });
+  });
+
+  describe('Registration', () => {
+    it('registers agent on ERC-8004', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      await POST(createRequest(validHumanBody));
+
+      expect(mockCreateAgent).toHaveBeenCalledWith('Human Agent', 'An agent deployed by a human');
+      expect(mockRegisterOnChain).toHaveBeenCalled();
+    });
+
+    it('stores agent card in KV', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      await POST(createRequest(validHumanBody));
+
+      const card = kvStore.get('agent:42:card');
+      expect(card).toBeDefined();
+      expect((card!.value as Record<string, unknown>).name).toBe('Human Agent');
+    });
+
+    it('emits AGENT_DEPLOYED_HUMAN event', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      await POST(createRequest(validHumanBody));
+
+      const deployEvent = zaddCalls.find((call) => {
+        const event = JSON.parse((call[1] as { member: string }).member);
+        return event.type === 'agent:deployed-human';
+      });
+      expect(deployEvent).toBeDefined();
+      const event = JSON.parse((deployEvent![1] as { member: string }).member);
+      expect(event.data.mode).toBe('human');
+      expect(event.data.humanAddress).toBe(humanWalletAddress);
     });
   });
 });

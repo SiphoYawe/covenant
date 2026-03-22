@@ -1,18 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { kvStore, zaddCalls, clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// Mock @vercel/kv
-const kvStore = new Map<string, unknown>();
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => kvStore.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => { kvStore.set(key, value); }),
-    del: vi.fn(async (key: string) => { kvStore.delete(key); }),
-    lpush: vi.fn(),
-    lrange: vi.fn().mockResolvedValue([]),
-    zadd: vi.fn().mockResolvedValue(1),
-    zrange: vi.fn().mockResolvedValue([]),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 // Mock Claude client
 const mockCreate = vi.fn();
@@ -58,7 +48,7 @@ function makeExplanationInput(overrides: Partial<ExplanationInput> = {}): Explan
 
 describe('Explanation Generation', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     vi.clearAllMocks();
   });
 
@@ -148,12 +138,12 @@ describe('Explanation Generation', () => {
 
   describe('cacheReputationWithExplanation', () => {
     test('writes correct structure to KV', async () => {
-      const { kv } = await import('@vercel/kv');
+      const { kvSet } = await import('@/lib/storage/kv');
 
       await cacheReputationWithExplanation('agent-b', 8.5, 'bafybeig12345', null, false);
 
-      expect(kv.set).toHaveBeenCalled();
-      const setCall = vi.mocked(kv.set).mock.calls.find((c) => c[0] === 'agent:agent-b:reputation');
+      expect(kvSet).toHaveBeenCalled();
+      const setCall = vi.mocked(kvSet).mock.calls.find((c) => c[0] === 'agent:agent-b:reputation');
       expect(setCall).toBeDefined();
       const cached = setCall![1] as AgentReputationCache;
       expect(cached.score).toBe(8.5);
@@ -164,7 +154,6 @@ describe('Explanation Generation', () => {
 
   describe('generateAndStoreExplanation', () => {
     test('orchestrates full pipeline (generate -> store -> cache -> event)', async () => {
-      const { kv } = await import('@vercel/kv');
       const input = makeExplanationInput();
 
       mockCreate.mockResolvedValueOnce({
@@ -182,7 +171,7 @@ describe('Explanation Generation', () => {
       expect(result.generatedAt).toBeGreaterThan(0);
 
       // Event should have been emitted via kv.zadd
-      expect(kv.zadd).toHaveBeenCalled();
+      expect(zaddCalls.length).toBeGreaterThan(0);
     });
 
     test('handles Pinata failure gracefully in full pipeline', async () => {
@@ -204,12 +193,14 @@ describe('Explanation Generation', () => {
   describe('retryDeferredPinning', () => {
     test('succeeds when Pinata recovers', async () => {
       kvStore.set('agent:agent-b:reputation', {
-        score: 8.5,
-        explanationCID: null,
-        explanationText: 'Agent B explanation text',
-        retryPinning: true,
-        updatedAt: Date.now(),
-      } satisfies AgentReputationCache);
+        value: {
+          score: 8.5,
+          explanationCID: null,
+          explanationText: 'Agent B explanation text',
+          retryPinning: true,
+          updatedAt: Date.now(),
+        } satisfies AgentReputationCache,
+      });
 
       mockPin.mockResolvedValueOnce('bafybeigrecovered');
 
@@ -228,12 +219,14 @@ describe('Explanation Generation', () => {
 
     test('no-ops when retryPinning is false', async () => {
       kvStore.set('agent:agent-b:reputation', {
-        score: 8.5,
-        explanationCID: 'bafyexisting',
-        explanationText: null,
-        retryPinning: false,
-        updatedAt: Date.now(),
-      } satisfies AgentReputationCache);
+        value: {
+          score: 8.5,
+          explanationCID: 'bafyexisting',
+          explanationText: null,
+          retryPinning: false,
+          updatedAt: Date.now(),
+        } satisfies AgentReputationCache,
+      });
 
       const result = await retryDeferredPinning('agent-b');
 

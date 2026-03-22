@@ -1,21 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { kvStore, zaddCalls, clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// Mock @vercel/kv
-const kvStore = new Map<string, unknown>();
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => kvStore.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => { kvStore.set(key, value); }),
-    del: vi.fn(async (key: string) => { kvStore.delete(key); }),
-    lpush: vi.fn(),
-    lrange: vi.fn(async (key: string) => {
-      const val = kvStore.get(key);
-      return Array.isArray(val) ? val : [];
-    }),
-    zadd: vi.fn().mockResolvedValue(1),
-    zrange: vi.fn().mockResolvedValue([]),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 // Mock Claude client
 const mockCreate = vi.fn();
@@ -72,7 +59,7 @@ function makeTxRecord(from: string, to: string, amount: number, timestamp: numbe
 
 describe('Sybil Detection', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     vi.clearAllMocks();
   });
 
@@ -383,7 +370,6 @@ describe('Sybil Detection', () => {
 
   describe('storeSybilAlerts', () => {
     test('writes to KV at correct keys', async () => {
-      const { kv } = await import('@vercel/kv');
       const alerts = [
         {
           id: 'alert-1',
@@ -397,11 +383,11 @@ describe('Sybil Detection', () => {
 
       await storeSybilAlerts(alerts);
 
-      expect(kv.set).toHaveBeenCalled();
+      const { kvSet } = await import('@/lib/storage/kv');
+      expect(kvSet).toHaveBeenCalled();
     });
 
     test('emits reputation:sybil-alert event per alert', async () => {
-      const { kv } = await import('@vercel/kv');
       const alerts = [
         {
           id: 'alert-1',
@@ -416,7 +402,7 @@ describe('Sybil Detection', () => {
       await storeSybilAlerts(alerts);
 
       // Event bus uses kv.zadd
-      expect(kv.zadd).toHaveBeenCalled();
+      expect(zaddCalls.length).toBeGreaterThan(0);
     });
   });
 
@@ -432,7 +418,7 @@ describe('Sybil Detection', () => {
           timestamp: 1000,
         },
       ];
-      kvStore.set('sybil:alerts', alerts);
+      kvStore.set('sybil:alerts', { value: alerts });
 
       const result = await getSybilAlerts();
       expect(result).toEqual(alerts);
@@ -459,7 +445,7 @@ describe('Sybil Detection', () => {
           timestamp: 2000,
         },
       ];
-      kvStore.set('sybil:alerts', alerts);
+      kvStore.set('sybil:alerts', { value: alerts });
 
       const result = await getSybilAlertsForAgent('agent-d');
       expect(result).toHaveLength(1);

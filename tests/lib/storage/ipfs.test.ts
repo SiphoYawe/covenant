@@ -1,19 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { kvStore, clearKvStore, createKvMock } from '../../helpers/kv-mock';
 
-// In-memory stores for mocking
-const kvStore = new Map<string, unknown>();
-
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => kvStore.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => {
-      kvStore.set(key, value);
-    }),
-    del: vi.fn(async (key: string) => {
-      kvStore.delete(key);
-    }),
-  },
-}));
+// Mock KV at the abstraction boundary
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
 // Mock Pinata SDK with a proper class
 const mockUploadJson = vi.fn();
@@ -42,7 +31,7 @@ vi.mock('@/lib/config/env', () => ({
 
 describe('IPFS Storage', () => {
   beforeEach(() => {
-    kvStore.clear();
+    clearKvStore();
     mockUploadJson.mockReset();
     mockGatewayGet.mockReset();
     vi.resetModules();
@@ -74,7 +63,7 @@ describe('IPFS Storage', () => {
 
   it('get() returns cached data from KV on second call', async () => {
     // Pre-populate KV cache
-    kvStore.set('ipfs:cache:QmCached', { cached: true });
+    kvStore.set('ipfs:cache:QmCached', { value: { cached: true } });
 
     const { get } = await import('@/lib/storage/ipfs');
     const data = await get('QmCached');

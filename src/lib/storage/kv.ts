@@ -14,6 +14,8 @@ function getRedis(): Redis {
         del: async () => 0,
         lpush: async () => 0,
         lrange: async () => [],
+        zadd: async () => 0,
+        zrange: async () => [],
         scan: async () => ['0', []],
       } as unknown as Redis;
     }

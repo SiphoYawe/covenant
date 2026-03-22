@@ -1,34 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { kvStore, clearKvStore } from '../../helpers/kv-mock';
 
-// In-memory KV store for testing
-const store = new Map<string, unknown>();
-const lists = new Map<string, string[]>();
+// Set env vars for the Redis constructor
+process.env.UPSTASH_REDIS_REST_URL = 'https://test.upstash.io';
+process.env.UPSTASH_REDIS_REST_TOKEN = 'test-token';
 
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => store.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => {
-      store.set(key, value);
-    }),
-    del: vi.fn(async (key: string) => {
-      store.delete(key);
-    }),
-    lpush: vi.fn(async (key: string, value: string) => {
-      const list = lists.get(key) ?? [];
-      list.unshift(value);
-      lists.set(key, list);
-    }),
-    lrange: vi.fn(async (key: string, start: number, end: number) => {
-      const list = lists.get(key) ?? [];
+vi.mock('@upstash/redis', () => ({
+  Redis: class MockRedis {
+    get = vi.fn(async (key: string) => {
+      const entry = kvStore.get(key);
+      if (!entry) return null;
+      return entry.value;
+    });
+    set = vi.fn(async (key: string, value: unknown, options?: { ex?: number }) => {
+      kvStore.set(key, { value });
+      return 'OK';
+    });
+    del = vi.fn(async (key: string) => {
+      kvStore.delete(key);
+      return 1;
+    });
+    lpush = vi.fn(async (key: string, ...values: string[]) => {
+      const existing = kvStore.get(key);
+      const list = existing ? (existing.value as string[]) : [];
+      list.unshift(...values);
+      kvStore.set(key, { value: list });
+      return list.length;
+    });
+    lrange = vi.fn(async (key: string, start: number, end: number) => {
+      const existing = kvStore.get(key);
+      const list = existing ? (existing.value as string[]) : [];
       return list.slice(start, end === -1 ? undefined : end + 1);
-    }),
+    });
+    zadd = vi.fn(async () => 1);
+    zrange = vi.fn(async () => []);
+    scan = vi.fn(async () => ['0', []]);
   },
 }));
 
 describe('KV Storage', () => {
   beforeEach(() => {
-    store.clear();
-    lists.clear();
+    clearKvStore();
   });
 
   it('set and get round-trips a value', async () => {

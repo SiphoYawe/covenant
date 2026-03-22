@@ -1,51 +1,48 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Protocol, type DemoEvent } from '@/lib/events/types';
+import { clearKvStore } from '../../helpers/kv-mock';
 
-// Mock @vercel/kv before importing bus
-vi.mock('@vercel/kv', () => {
-  const store = new Map<string, string>();
-  const sortedSets = new Map<string, Array<{ score: number; member: string }>>();
+// Track sorted set data for this test
+const sortedSets = new Map<string, Array<{ score: number; member: string }>>();
 
-  return {
-    kv: {
-      zadd: vi.fn(async (key: string, { score, member }: { score: number; member: string }) => {
-        const set = sortedSets.get(key) || [];
-        set.push({ score, member });
-        sortedSets.set(key, set);
-        return 1;
-      }),
-      zrange: vi.fn(async (key: string, min: number | string, max: number | string, opts?: { byScore?: boolean }) => {
-        const set = sortedSets.get(key) || [];
-        // Parse exclusive bound syntax: "(123" means > 123
-        const parseMin = (v: number | string): number => {
-          if (typeof v === 'string' && v.startsWith('(')) return Number(v.slice(1));
-          if (typeof v === 'string') return v === '-' ? -Infinity : Number(v);
-          return v;
-        };
-        const parseMax = (v: number | string): number => {
-          if (typeof v === 'string') return (v === '+' || v === '+inf') ? Infinity : Number(v);
-          return v;
-        };
-        const minNum = parseMin(min);
-        const maxNum = parseMax(max);
-        const exclusive = typeof min === 'string' && min.startsWith('(');
-        return set
-          .filter((item) => (exclusive ? item.score > minNum : item.score >= minNum) && item.score <= maxNum)
-          .sort((a, b) => a.score - b.score)
-          .map((item) => item.member);
-      }),
-    },
-    __resetMock: () => {
-      store.clear();
-      sortedSets.clear();
-    },
-  };
+vi.mock('@/lib/storage/kv', async () => {
+  const { createKvMock } = await import('../../helpers/kv-mock');
+  const mock = createKvMock();
+  // Override zadd/zrange with sorted set behavior needed by event bus
+  mock.kv.zadd = vi.fn(async (...args: unknown[]) => {
+    const key = args[0] as string;
+    const { score, member } = args[1] as { score: number; member: string };
+    const set = sortedSets.get(key) || [];
+    set.push({ score, member });
+    sortedSets.set(key, set);
+    return 1;
+  });
+  mock.kv.zrange = vi.fn(async (key: string, min: number | string, max: number | string, opts?: { byScore?: boolean }) => {
+    const set = sortedSets.get(key) || [];
+    const parseMin = (v: number | string): number => {
+      if (typeof v === 'string' && v.startsWith('(')) return Number(v.slice(1));
+      if (typeof v === 'string') return v === '-' ? -Infinity : Number(v);
+      return v;
+    };
+    const parseMax = (v: number | string): number => {
+      if (typeof v === 'string') return (v === '+' || v === '+inf') ? Infinity : Number(v);
+      return v;
+    };
+    const minNum = parseMin(min);
+    const maxNum = parseMax(max);
+    const exclusive = typeof min === 'string' && min.startsWith('(');
+    return set
+      .filter((item) => (exclusive ? item.score > minNum : item.score >= minNum) && item.score <= maxNum)
+      .sort((a, b) => a.score - b.score)
+      .map((item) => item.member);
+  });
+  return mock;
 });
 
 describe('Event Bus', () => {
-  beforeEach(async () => {
-    const { __resetMock } = await import('@vercel/kv');
-    (__resetMock as () => void)();
+  beforeEach(() => {
+    sortedSets.clear();
+    clearKvStore();
     vi.clearAllMocks();
   });
 

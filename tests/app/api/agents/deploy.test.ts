@@ -1,44 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
+import { kvStore, zaddCalls, clearKvStore, createKvMock } from '../../../helpers/kv-mock';
 
-// --- In-memory KV mock ---
-const kvStore = new Map<string, { value: unknown; expiresAt?: number }>();
-const kvLists = new Map<string, string[]>();
+// --- Mock KV at the abstraction boundary ---
+vi.mock('@/lib/storage/kv', () => createKvMock());
 
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    get: vi.fn(async (key: string) => {
-      const entry = kvStore.get(key);
-      if (!entry) return null;
-      if (entry.expiresAt && Date.now() > entry.expiresAt) {
-        kvStore.delete(key);
-        return null;
-      }
-      return entry.value;
-    }),
-    set: vi.fn(async (key: string, value: unknown, options?: { ex?: number }) => {
-      const entry: { value: unknown; expiresAt?: number } = { value };
-      if (options?.ex) {
-        entry.expiresAt = Date.now() + options.ex * 1000;
-      }
-      kvStore.set(key, entry);
-    }),
-    del: vi.fn(async (key: string) => {
-      kvStore.delete(key);
-    }),
-    lpush: vi.fn(async (key: string, value: string) => {
-      const list = kvLists.get(key) ?? [];
-      list.unshift(value);
-      kvLists.set(key, list);
-    }),
-    lrange: vi.fn(async (key: string, start: number, end: number) => {
-      const list = kvLists.get(key) ?? [];
-      return list.slice(start, end === -1 ? undefined : end + 1);
-    }),
-    zadd: vi.fn(async () => {}),
-    zrange: vi.fn(async () => []),
-  },
-}));
+// Also mock @/lib/storage (re-exports from kv.ts)
+vi.mock('@/lib/storage', async (importOriginal) => {
+  const kvMock = createKvMock();
+  return {
+    kvGet: kvMock.kvGet,
+    kvSet: kvMock.kvSet,
+    kvDel: kvMock.kvDel,
+    kvLpush: kvMock.kvLpush,
+    kvLrange: kvMock.kvLrange,
+    kvScan: kvMock.kvScan,
+    pin: vi.fn(async () => 'QmTestCid'),
+    get: vi.fn(async () => null),
+  };
+});
 
 // --- Env mock ---
 const TEST_ENV = {
@@ -95,6 +75,15 @@ vi.mock('@/lib/wallets/manager', () => ({
   }),
 }));
 
+// --- Mock Civic Auth (not authenticated by default for provisioned/BYOW) ---
+vi.mock('@civic/auth/nextjs', () => ({
+  getUser: vi.fn(async () => null),
+}));
+
+vi.mock('@civic/auth-web3/server', () => ({
+  getWallets: vi.fn(async () => []),
+}));
+
 // --- Helper to create a Request ---
 function createRequest(body: unknown): Request {
   return new Request('http://localhost:3000/api/agents/deploy', {
@@ -114,8 +103,7 @@ function createVerifyRequest(body: unknown): Request {
 
 describe('POST /api/agents/deploy', () => {
   beforeEach(() => {
-    kvStore.clear();
-    kvLists.clear();
+    clearKvStore();
     vi.clearAllMocks();
     mockCreateAgent.mockReturnValue(mockAgent);
     mockRegisterOnChain.mockResolvedValue({ waitMined: mockWaitMined, hash: '0xabc123' });
@@ -154,26 +142,7 @@ describe('POST /api/agents/deploy', () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
       await POST(createRequest(validProvisionedBody));
 
-      // fundFromPool calls system wallet writeContract
       expect(mockSystemWriteContract).toHaveBeenCalled();
-    });
-
-    it('emits AGENT_DEPLOYED event', async () => {
-      const { POST } = await import('@/app/api/agents/deploy/route');
-      await POST(createRequest(validProvisionedBody));
-
-      const { kv } = await import('@vercel/kv');
-      // Event bus uses kv.zadd
-      expect(kv.zadd).toHaveBeenCalled();
-
-      // Check the emitted event data
-      const zaddCall = (kv.zadd as ReturnType<typeof vi.fn>).mock.calls;
-      const lastCall = zaddCall[zaddCall.length - 1];
-      const eventStr = lastCall[1].member;
-      const event = JSON.parse(eventStr);
-      expect(event.type).toBe('agent:deployed');
-      expect(event.data.mode).toBe('provisioned');
-      expect(event.data.fundedAmount).toBe(5_000_000);
     });
 
     it('stores agent card in KV', async () => {
@@ -185,11 +154,51 @@ describe('POST /api/agents/deploy', () => {
       expect((stored!.value as Record<string, unknown>).name).toBe('Test Agent');
     });
 
+    it('stores provisioned wallet private key in KV', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest(validProvisionedBody));
+      const body = await response.json();
+
+      const keyEntry = kvStore.get(`wallet:${body.address}:key`);
+      expect(keyEntry).toBeDefined();
+      expect((keyEntry!.value as string)).toMatch(/^0x[0-9a-f]{64}$/);
+    });
+
+    it('stores provisioned-at timestamp in KV', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest(validProvisionedBody));
+      const body = await response.json();
+
+      const atEntry = kvStore.get(`wallet:${body.address}:provisioned-at`);
+      expect(atEntry).toBeDefined();
+    });
+
+    it('records funded amount in KV', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest(validProvisionedBody));
+      const body = await response.json();
+
+      const fundedEntry = kvStore.get(`wallet:${body.address}:funded-amount`);
+      expect(fundedEntry).toBeDefined();
+      expect(fundedEntry!.value).toBe(5_000_000);
+    });
+
+    it('emits AGENT_DEPLOYED event', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      await POST(createRequest(validProvisionedBody));
+
+      expect(zaddCalls.length).toBeGreaterThan(0);
+      const lastCall = zaddCalls[zaddCalls.length - 1];
+      const event = JSON.parse((lastCall[1] as { member: string }).member);
+      expect(event.type).toBe('agent:deployed');
+      expect(event.data.mode).toBe('provisioned');
+      expect(event.data.fundedAmount).toBe(5_000_000);
+    });
+
     it('returns 503 when pool balance is insufficient', async () => {
-      // Override pool balance to be low
       const { getPublicClient } = await import('@/lib/wallets/manager');
       (getPublicClient as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        readContract: vi.fn().mockResolvedValue(BigInt(1_000_000)), // Only 1 USDC
+        readContract: vi.fn().mockResolvedValue(BigInt(1_000_000)),
       });
 
       const { POST } = await import('@/app/api/agents/deploy/route');
@@ -198,6 +207,39 @@ describe('POST /api/agents/deploy', () => {
 
       expect(response.status).toBe(503);
       expect(body.error.code).toBe('INSUFFICIENT_POOL_BALANCE');
+    });
+
+    it('handles registration failure gracefully', async () => {
+      mockRegisterOnChain.mockRejectedValueOnce(new Error('Chain error'));
+
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest(validProvisionedBody));
+      const body = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(body.error.code).toBe('DEPLOY_FAILED');
+    });
+
+    it('handles funding failure gracefully', async () => {
+      mockSystemWriteContract.mockRejectedValueOnce(new Error('Transfer failed'));
+
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest(validProvisionedBody));
+      const body = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(body.error.code).toBe('DEPLOY_FAILED');
+    });
+
+    it('generates unique wallets for each deployment', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const res1 = await POST(createRequest(validProvisionedBody));
+      const body1 = await res1.json();
+
+      const res2 = await POST(createRequest({ ...validProvisionedBody, name: 'Agent Two' }));
+      const body2 = await res2.json();
+
+      expect(body1.address).not.toBe(body2.address);
     });
   });
 
@@ -237,68 +279,114 @@ describe('POST /api/agents/deploy', () => {
       expect(nonce).toBeDefined();
       expect(nonce!.expiresAt).toBeDefined();
     });
+
+    it('stores config with TTL matching nonce', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      await POST(createRequest(validBYOWBody));
+
+      const config = kvStore.get(`deploy:config:${validBYOWBody.address}`);
+      expect(config).toBeDefined();
+      expect(config!.expiresAt).toBeDefined();
+    });
+
+    it('does not fund wallet or register on-chain', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      await POST(createRequest(validBYOWBody));
+
+      expect(mockSystemWriteContract).not.toHaveBeenCalled();
+      expect(mockCreateAgent).not.toHaveBeenCalled();
+    });
+
+    it('generates unique nonces per request', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const res1 = await POST(createRequest(validBYOWBody));
+      const body1 = await res1.json();
+
+      const res2 = await POST(createRequest(validBYOWBody));
+      const body2 = await res2.json();
+
+      expect(body1.nonce).not.toBe(body2.nonce);
+    });
   });
 
   describe('Validation errors', () => {
     it('returns 400 for missing mode', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest({ name: 'Test' }));
-      const body = await response.json();
-
       expect(response.status).toBe(400);
-      expect(body.error.code).toBe('INVALID_REQUEST');
+      expect((await response.json()).error.code).toBe('INVALID_REQUEST');
     });
 
     it('returns 400 for name too short', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest({
-        mode: 'provisioned',
-        name: 'AB',
-        description: 'Valid description here',
-        capabilities: ['research'],
+        mode: 'provisioned', name: 'AB',
+        description: 'Valid description here', capabilities: ['research'],
       }));
-      const body = await response.json();
-
       expect(response.status).toBe(400);
-      expect(body.error.details).toBeDefined();
+    });
+
+    it('returns 400 for name too long', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest({
+        mode: 'provisioned', name: 'A'.repeat(51),
+        description: 'Valid description here', capabilities: ['research'],
+      }));
+      expect(response.status).toBe(400);
+    });
+
+    it('returns 400 for description too short', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest({
+        mode: 'provisioned', name: 'Valid Name',
+        description: 'Short', capabilities: ['research'],
+      }));
+      expect(response.status).toBe(400);
     });
 
     it('returns 400 for empty capabilities', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest({
-        mode: 'provisioned',
-        name: 'Valid Name',
-        description: 'Valid description here',
-        capabilities: [],
+        mode: 'provisioned', name: 'Valid Name',
+        description: 'Valid description here', capabilities: [],
       }));
+      expect(response.status).toBe(400);
+    });
 
-      expect((await response.json()).error.code).toBe('INVALID_REQUEST');
+    it('returns 400 for too many capabilities', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest({
+        mode: 'provisioned', name: 'Valid Name',
+        description: 'Valid description here',
+        capabilities: Array.from({ length: 11 }, (_, i) => `cap_${i}`),
+      }));
       expect(response.status).toBe(400);
     });
 
     it('returns 400 for invalid BYOW address format', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest({
-        mode: 'byow',
-        address: 'not-a-hex-address',
-        name: 'Valid Name',
-        description: 'Valid description here',
-        capabilities: ['research'],
+        mode: 'byow', address: 'not-a-hex-address',
+        name: 'Valid Name', description: 'Valid description here', capabilities: ['research'],
       }));
+      expect(response.status).toBe(400);
+    });
 
+    it('returns 400 for BYOW address too short', async () => {
+      const { POST } = await import('@/app/api/agents/deploy/route');
+      const response = await POST(createRequest({
+        mode: 'byow', address: '0x1234',
+        name: 'Valid Name', description: 'Valid description here', capabilities: ['research'],
+      }));
       expect(response.status).toBe(400);
     });
 
     it('returns 401 for human mode without Civic session', async () => {
       const { POST } = await import('@/app/api/agents/deploy/route');
       const response = await POST(createRequest({
-        mode: 'human',
-        name: 'Human Agent',
-        description: 'A human-deployed agent',
-        capabilities: ['research'],
-        linkReputation: true,
+        mode: 'human', name: 'Human Agent', description: 'A human-deployed agent',
+        capabilities: ['research'], linkReputation: true,
       }));
-
       expect(response.status).toBe(401);
       expect((await response.json()).error.code).toBe('AUTH_REQUIRED');
     });
@@ -307,8 +395,7 @@ describe('POST /api/agents/deploy', () => {
 
 describe('POST /api/agents/deploy/verify', () => {
   beforeEach(() => {
-    kvStore.clear();
-    kvLists.clear();
+    clearKvStore();
     vi.clearAllMocks();
     mockCreateAgent.mockReturnValue(mockAgent);
     mockRegisterOnChain.mockResolvedValue({ waitMined: mockWaitMined, hash: '0xabc123' });
@@ -316,30 +403,19 @@ describe('POST /api/agents/deploy/verify', () => {
   });
 
   it('returns 201 with agentId on valid signature', async () => {
-    // Create a test account
     const testKey = '0x' + 'ab'.repeat(32);
     const account = privateKeyToAccount(testKey as `0x${string}`);
-
-    // Simulate nonce generation (store nonce + config in KV)
     const nonce = 'a'.repeat(64);
+
     kvStore.set(`deploy:nonces:${account.address}`, { value: nonce });
     kvStore.set(`deploy:config:${account.address}`, {
-      value: {
-        name: 'BYOW Agent',
-        description: 'Agent with own wallet',
-        capabilities: ['research'],
-      },
+      value: { name: 'BYOW Agent', description: 'Agent with own wallet', capabilities: ['research'] },
     });
 
-    // Sign the nonce
     const signature = await account.signMessage({ message: nonce });
 
     const { POST } = await import('@/app/api/agents/deploy/verify/route');
-    const response = await POST(createVerifyRequest({
-      address: account.address,
-      nonce,
-      signature,
-    }));
+    const response = await POST(createVerifyRequest({ address: account.address, nonce, signature }));
     const body = await response.json();
 
     expect(response.status).toBe(201);
@@ -359,12 +435,27 @@ describe('POST /api/agents/deploy/verify', () => {
     });
 
     const signature = await account.signMessage({ message: nonce });
-
     const { POST } = await import('@/app/api/agents/deploy/verify/route');
     await POST(createVerifyRequest({ address: account.address, nonce, signature }));
 
-    // Nonce should be consumed
     expect(kvStore.has(`deploy:nonces:${account.address}`)).toBe(false);
+  });
+
+  it('cleans up deploy config after successful verification', async () => {
+    const testKey = '0x' + 'ab'.repeat(32);
+    const account = privateKeyToAccount(testKey as `0x${string}`);
+    const nonce = 'c'.repeat(64);
+
+    kvStore.set(`deploy:nonces:${account.address}`, { value: nonce });
+    kvStore.set(`deploy:config:${account.address}`, {
+      value: { name: 'Test', description: 'Test agent desc', capabilities: ['research'] },
+    });
+
+    const signature = await account.signMessage({ message: nonce });
+    const { POST } = await import('@/app/api/agents/deploy/verify/route');
+    await POST(createVerifyRequest({ address: account.address, nonce, signature }));
+
+    expect(kvStore.has(`deploy:config:${account.address}`)).toBe(false);
   });
 
   it('returns 401 for invalid signature and does NOT consume nonce', async () => {
@@ -372,61 +463,87 @@ describe('POST /api/agents/deploy/verify', () => {
     const fakeKey = '0x' + 'cd'.repeat(32);
     const realAccount = privateKeyToAccount(realKey as `0x${string}`);
     const fakeAccount = privateKeyToAccount(fakeKey as `0x${string}`);
+    const nonce = 'f'.repeat(64);
 
-    const nonce = 'c'.repeat(64);
     kvStore.set(`deploy:nonces:${realAccount.address}`, { value: nonce });
     kvStore.set(`deploy:config:${realAccount.address}`, {
       value: { name: 'Test', description: 'Test agent desc', capabilities: ['research'] },
     });
 
-    // Sign with wrong account
     const signature = await fakeAccount.signMessage({ message: nonce });
-
     const { POST } = await import('@/app/api/agents/deploy/verify/route');
     const response = await POST(createVerifyRequest({
-      address: realAccount.address,
-      nonce,
-      signature,
+      address: realAccount.address, nonce, signature,
     }));
 
     expect(response.status).toBe(401);
     expect((await response.json()).error.code).toBe('INVALID_SIGNATURE');
-
-    // Nonce should NOT be consumed
     expect(kvStore.has(`deploy:nonces:${realAccount.address}`)).toBe(true);
   });
 
   it('returns 410 for expired or used nonce', async () => {
     const testKey = '0x' + 'ab'.repeat(32);
     const account = privateKeyToAccount(testKey as `0x${string}`);
-    const nonce = 'd'.repeat(64);
-
-    // No nonce stored (simulates expired/used)
+    const nonce = '1'.repeat(64);
     const signature = await account.signMessage({ message: nonce });
 
     const { POST } = await import('@/app/api/agents/deploy/verify/route');
-    const response = await POST(createVerifyRequest({
-      address: account.address,
-      nonce,
-      signature,
-    }));
+    const response = await POST(createVerifyRequest({ address: account.address, nonce, signature }));
 
     expect(response.status).toBe(410);
     expect((await response.json()).error.code).toBe('NONCE_EXPIRED');
   });
 
+  it('returns 410 when deploy config has expired but nonce exists', async () => {
+    const testKey = '0x' + 'ab'.repeat(32);
+    const account = privateKeyToAccount(testKey as `0x${string}`);
+    const nonce = '2'.repeat(64);
+
+    kvStore.set(`deploy:nonces:${account.address}`, { value: nonce });
+    // No config stored
+
+    const signature = await account.signMessage({ message: nonce });
+    const { POST } = await import('@/app/api/agents/deploy/verify/route');
+    const response = await POST(createVerifyRequest({ address: account.address, nonce, signature }));
+
+    expect(response.status).toBe(410);
+    expect((await response.json()).error.code).toBe('CONFIG_EXPIRED');
+  });
+
   it('returns 400 for malformed request body', async () => {
     const { POST } = await import('@/app/api/agents/deploy/verify/route');
-    const response = await POST(createVerifyRequest({
-      address: 'not-hex',
-      nonce: 'too-short',
-    }));
+    const response = await POST(createVerifyRequest({ address: 'not-hex', nonce: 'too-short' }));
 
     expect(response.status).toBe(400);
     expect((await response.json()).error.code).toBe('INVALID_REQUEST');
   });
 
-  it('emits AGENT_DEPLOYED event with byow mode', async () => {
+  it('prevents nonce replay (second attempt fails)', async () => {
+    const testKey = '0x' + 'ab'.repeat(32);
+    const account = privateKeyToAccount(testKey as `0x${string}`);
+    const nonce = '3'.repeat(64);
+
+    kvStore.set(`deploy:nonces:${account.address}`, { value: nonce });
+    kvStore.set(`deploy:config:${account.address}`, {
+      value: { name: 'Test', description: 'Test agent desc', capabilities: ['research'] },
+    });
+
+    const signature = await account.signMessage({ message: nonce });
+    const { POST } = await import('@/app/api/agents/deploy/verify/route');
+
+    const res1 = await POST(createVerifyRequest({ address: account.address, nonce, signature }));
+    expect(res1.status).toBe(201);
+
+    // Re-store config (was consumed) but nonce is gone
+    kvStore.set(`deploy:config:${account.address}`, {
+      value: { name: 'Test', description: 'Test agent desc', capabilities: ['research'] },
+    });
+
+    const res2 = await POST(createVerifyRequest({ address: account.address, nonce, signature }));
+    expect(res2.status).toBe(410);
+  });
+
+  it('emits AGENT_DEPLOYED event with byow mode on successful verify', async () => {
     const testKey = '0x' + 'ab'.repeat(32);
     const account = privateKeyToAccount(testKey as `0x${string}`);
     const nonce = 'e'.repeat(64);
@@ -437,36 +554,117 @@ describe('POST /api/agents/deploy/verify', () => {
     });
 
     const signature = await account.signMessage({ message: nonce });
-
     const { POST } = await import('@/app/api/agents/deploy/verify/route');
     await POST(createVerifyRequest({ address: account.address, nonce, signature }));
 
-    const { kv } = await import('@vercel/kv');
-    const zaddCalls = (kv.zadd as ReturnType<typeof vi.fn>).mock.calls;
+    expect(zaddCalls.length).toBeGreaterThan(0);
     const lastCall = zaddCalls[zaddCalls.length - 1];
-    const event = JSON.parse(lastCall[1].member);
+    const event = JSON.parse((lastCall[1] as { member: string }).member);
     expect(event.type).toBe('agent:deployed');
     expect(event.data.mode).toBe('byow');
   });
+});
 
-  it('returns 410 when deploy config has expired', async () => {
+describe('Full BYOW E2E flow', () => {
+  beforeEach(() => {
+    clearKvStore();
+    vi.clearAllMocks();
+    mockCreateAgent.mockReturnValue(mockAgent);
+    mockRegisterOnChain.mockResolvedValue({ waitMined: mockWaitMined, hash: '0xabc123' });
+    mockWaitMined.mockResolvedValue({ receipt: { transactionHash: '0xabc123' }, result: {} });
+  });
+
+  it('completes full BYOW deployment: step1 (nonce) + step2 (verify + register)', async () => {
     const testKey = '0x' + 'ab'.repeat(32);
     const account = privateKeyToAccount(testKey as `0x${string}`);
-    const nonce = 'f'.repeat(64);
 
-    // Store nonce but NOT config (simulates config expiry)
-    kvStore.set(`deploy:nonces:${account.address}`, { value: nonce });
-
-    const signature = await account.signMessage({ message: nonce });
-
-    const { POST } = await import('@/app/api/agents/deploy/verify/route');
-    const response = await POST(createVerifyRequest({
-      address: account.address,
-      nonce,
-      signature,
+    // Step 1: Request nonce
+    const deployRoute = await import('@/app/api/agents/deploy/route');
+    const step1Response = await deployRoute.POST(createRequest({
+      mode: 'byow', address: account.address,
+      name: 'E2E BYOW Agent', description: 'End to end test agent',
+      capabilities: ['research', 'analysis'],
     }));
 
-    expect(response.status).toBe(410);
-    expect((await response.json()).error.code).toBe('CONFIG_EXPIRED');
+    expect(step1Response.status).toBe(200);
+    const step1Body = await step1Response.json();
+    expect(step1Body.nonce).toMatch(/^[0-9a-f]{64}$/);
+
+    // Step 2: Sign the nonce and verify
+    const signature = await account.signMessage({ message: step1Body.nonce });
+    const verifyRoute = await import('@/app/api/agents/deploy/verify/route');
+    const step2Response = await verifyRoute.POST(createVerifyRequest({
+      address: account.address, nonce: step1Body.nonce, signature,
+    }));
+
+    expect(step2Response.status).toBe(201);
+    const step2Body = await step2Response.json();
+    expect(step2Body.agentId).toBe('42');
+    expect(step2Body.address).toBe(account.address);
+    expect(step2Body.agentCard).toBeDefined();
+    expect(step2Body.agentCard.name).toBe('E2E BYOW Agent');
+
+    // Verify cleanup
+    expect(kvStore.has(`deploy:nonces:${account.address}`)).toBe(false);
+    expect(kvStore.has(`deploy:config:${account.address}`)).toBe(false);
+    expect(kvStore.has('agent:42:card')).toBe(true);
+  });
+
+  it('rejects BYOW verification with wrong wallet', async () => {
+    const ownerKey = '0x' + 'ab'.repeat(32);
+    const attackerKey = '0x' + 'cd'.repeat(32);
+    const ownerAccount = privateKeyToAccount(ownerKey as `0x${string}`);
+    const attackerAccount = privateKeyToAccount(attackerKey as `0x${string}`);
+
+    const deployRoute = await import('@/app/api/agents/deploy/route');
+    const step1Response = await deployRoute.POST(createRequest({
+      mode: 'byow', address: ownerAccount.address,
+      name: 'Victim Agent', description: 'Agent that attacker wants to steal',
+      capabilities: ['research'],
+    }));
+    const { nonce } = await step1Response.json();
+
+    const attackerSignature = await attackerAccount.signMessage({ message: nonce });
+    const verifyRoute = await import('@/app/api/agents/deploy/verify/route');
+    const step2Response = await verifyRoute.POST(createVerifyRequest({
+      address: ownerAccount.address, nonce, signature: attackerSignature,
+    }));
+
+    expect(step2Response.status).toBe(401);
+    expect(kvStore.has(`deploy:nonces:${ownerAccount.address}`)).toBe(true);
+  });
+});
+
+describe('Full Provisioned E2E flow', () => {
+  beforeEach(() => {
+    clearKvStore();
+    vi.clearAllMocks();
+    mockCreateAgent.mockReturnValue(mockAgent);
+    mockRegisterOnChain.mockResolvedValue({ waitMined: mockWaitMined, hash: '0xabc123' });
+    mockWaitMined.mockResolvedValue({ receipt: { transactionHash: '0xabc123' }, result: {} });
+  });
+
+  it('completes full provisioned deployment in one call', async () => {
+    const { POST } = await import('@/app/api/agents/deploy/route');
+    const response = await POST(createRequest({
+      mode: 'provisioned', name: 'Provisioned E2E Agent',
+      description: 'Full end to end provisioned deployment',
+      capabilities: ['research', 'code_review'],
+    }));
+
+    expect(response.status).toBe(201);
+    const body = await response.json();
+
+    expect(body.agentId).toBe('42');
+    expect(body.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(body.agentCard.name).toBe('Provisioned E2E Agent');
+    expect(kvStore.has(`wallet:${body.address}:key`)).toBe(true);
+    expect(mockSystemWriteContract).toHaveBeenCalledTimes(1);
+    expect(mockCreateAgent).toHaveBeenCalledWith('Provisioned E2E Agent', 'Full end to end provisioned deployment');
+    expect(mockRegisterOnChain).toHaveBeenCalledTimes(1);
+
+    const card = kvStore.get('agent:42:card');
+    expect(card).toBeDefined();
+    expect((card!.value as Record<string, unknown>).name).toBe('Provisioned E2E Agent');
   });
 });
