@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { useAgents, useEvents, useCivicMetrics, useLoading } from '@/stores/dashboard';
 import { formatTimestamp } from '@/components/dashboard/feed-utils';
+import { stripMarkdown } from '@/lib/utils/strip-markdown';
 import { Badge } from '@/components/ui/badge';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -75,7 +76,7 @@ function eventToInspection(
         layer: 'L2',
         result: 'catch',
         severity: 'critical',
-        description: `${event.data.attackType ?? 'Threat'} detected from ${agentName}: ${event.data.evidence ?? 'Flagged by Civic behavioral analysis'}`,
+        description: stripMarkdown(`${event.data.attackType ?? 'Threat'} detected from ${agentName}: ${event.data.evidence ?? 'Flagged by Civic behavioral analysis'}`),
       };
 
     case 'civic:tool-blocked':
@@ -387,7 +388,7 @@ function TimelineEntry({ entry }: { entry: CivicInspection }) {
           </div>
           <div>
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Details</span>
-            <p className="text-sm text-foreground mt-0.5">{entry.description}</p>
+            <div className="text-sm text-foreground mt-0.5 whitespace-pre-line">{entry.description}</div>
           </div>
           <div>
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Agent ID</span>
