@@ -12,7 +12,6 @@ import {
   ChartRelationshipIcon,
   AffiliateIcon,
   Activity01Icon,
-  PlayIcon,
   Shield01Icon,
   RocketIcon,
 } from '@hugeicons/core-free-icons';
@@ -34,10 +33,6 @@ const navigationItems: NavItem[] = [
   { label: 'Trust Graph', href: '/trust-graph', icon: ChartRelationshipIcon },
   { label: 'Payments', href: '/payments', icon: AffiliateIcon },
   { label: 'Activity', href: '/activity', icon: Activity01Icon },
-];
-
-const demoItems: NavItem[] = [
-  { label: 'Run Demo', href: '/demo', icon: PlayIcon },
   { label: 'Civic Guards', href: '/civic-guards', icon: Shield01Icon },
 ];
 
@@ -110,11 +105,6 @@ export function Sidebar() {
         <NavSection
           label="Navigation"
           items={navigationItems}
-          currentPath={pathname}
-        />
-        <NavSection
-          label="Demo"
-          items={demoItems}
           currentPath={pathname}
         />
         <NavSection
