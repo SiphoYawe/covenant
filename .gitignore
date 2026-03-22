@@ -63,6 +63,7 @@ tsconfig.tsbuildinfo
 # Seed data state (auto-generated, contains wallet progress)
 seed/state.json
 seed/engine-state.json
+seed/engine-state.json.backup-*
 seed/funding-state.json
 seed/.browser-data/
 tests/seed/.test-state/
